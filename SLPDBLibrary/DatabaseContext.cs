@@ -5,7 +5,9 @@ namespace SLPDBLibrary
 {
     public class DatabaseContext:DbContext
     {
-        public DbSet<tbBranche> tbBranches { get; set; }
+        public DbSet<tbBranche> tbBranche { get; set; }
+        public DbSet<tbCities> tbCities { get; set; }
+        public DbSet<tbRegions> tbRegions { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
