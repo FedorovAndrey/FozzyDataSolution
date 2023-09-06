@@ -1,13 +1,12 @@
 ﻿// See https://aka.ms/new-console-template for more information
+
+using System.Configuration;
 using SLPDBLibrary;
+using NLog;
+using Microsoft.Extensions.Logging;
+using NLog.Extensions.Logging;
 
-Console.WriteLine("Hello, World!");
-using (DatabaseContext database = new DatabaseContext())
-{
-    var query = database.tbBranche.ToList();
+var logger = LoggerFactory.Create(builder => builder.AddNLog()).CreateLogger<Program>();
+logger.LogInformation("Program has started.");
 
-    foreach (tbBranche branche in query)
-    {
-        Console.WriteLine("Address - {0} : Server Name - {1}", branche.Address, branche.ServerName);
-    }
-}
+
