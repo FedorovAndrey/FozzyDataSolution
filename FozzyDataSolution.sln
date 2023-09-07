@@ -3,11 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.34018.315
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SLPReportBuilder", "SLPReportBuilder\SLPReportBuilder.csproj", "{E4DAF84A-E2B7-42D6-9895-F4B9356CCAB6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SLPReportBuilder", "SLPReportBuilder\SLPReportBuilder.csproj", "{E4DAF84A-E2B7-42D6-9895-F4B9356CCAB6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SLPDBLibrary", "SLPDBLibrary\SLPDBLibrary.csproj", "{7F136819-CA0B-4C09-B42D-4C038E2D0FED}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SLPDBLibrary", "SLPDBLibrary\SLPDBLibrary.csproj", "{7F136819-CA0B-4C09-B42D-4C038E2D0FED}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SLPReportCreater", "SLPReportCreater\SLPReportCreater.csproj", "{C6212EE8-34F7-4497-8727-346567A86DF7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SLPReportCreater", "SLPReportCreater\SLPReportCreater.csproj", "{C6212EE8-34F7-4497-8727-346567A86DF7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SLPMailSender", "SLPMailSender\SLPMailSender.csproj", "{DCB88E9E-CE9E-4F8F-9B14-00F818BBE995}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SLPHelper", "SLPHelper\SLPHelper.csproj", "{315AACFF-9A01-40D5-B597-AB291C3EB131}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SLPWebApp", "SLPWebApp\SLPWebApp.csproj", "{2FCB70F8-243F-4E13-A307-C13CCC21645A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +33,18 @@ Global
 		{C6212EE8-34F7-4497-8727-346567A86DF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C6212EE8-34F7-4497-8727-346567A86DF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C6212EE8-34F7-4497-8727-346567A86DF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DCB88E9E-CE9E-4F8F-9B14-00F818BBE995}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DCB88E9E-CE9E-4F8F-9B14-00F818BBE995}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DCB88E9E-CE9E-4F8F-9B14-00F818BBE995}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DCB88E9E-CE9E-4F8F-9B14-00F818BBE995}.Release|Any CPU.Build.0 = Release|Any CPU
+		{315AACFF-9A01-40D5-B597-AB291C3EB131}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{315AACFF-9A01-40D5-B597-AB291C3EB131}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{315AACFF-9A01-40D5-B597-AB291C3EB131}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{315AACFF-9A01-40D5-B597-AB291C3EB131}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FCB70F8-243F-4E13-A307-C13CCC21645A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FCB70F8-243F-4E13-A307-C13CCC21645A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FCB70F8-243F-4E13-A307-C13CCC21645A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FCB70F8-243F-4E13-A307-C13CCC21645A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -16,6 +16,6 @@ namespace SLPDBLibrary
         public int MVZ { get; set; }
         public float BranchSquare { get; set; }
         public float TradingSquare { get; set; }
-
+        public int Region { get; set; }
     }
 }

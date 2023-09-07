@@ -16,4 +16,9 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.Design" Version="1.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SLPDBLibrary\SLPDBLibrary.csproj" />
+    <ProjectReference Include="..\SLPHelper\SLPHelper.csproj" />
+  </ItemGroup>
+
 </Project>

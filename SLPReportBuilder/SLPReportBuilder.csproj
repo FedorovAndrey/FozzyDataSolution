@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -18,7 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SLPDBLibrary\SLPDBLibrary.csproj" />
+    <ProjectReference Include="..\SLPHelper\SLPHelper.csproj" />
+    <ProjectReference Include="..\SLPMailSender\SLPMailSender.csproj" />
+    <ProjectReference Include="..\SLPReportCreater\SLPReportCreater.csproj" />
   </ItemGroup>
 
   <ItemGroup>
