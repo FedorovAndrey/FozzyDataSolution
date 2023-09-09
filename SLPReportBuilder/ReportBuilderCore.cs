@@ -16,13 +16,8 @@ namespace SLPReportBuilder
         {
             try
             {
-                WorkWithExcel dailyReport = new WorkWithExcel(ReportType.Day);
+               
 
-                if (dailyReport != null)
-                {
-                    Thread dailyReportThread = new Thread(dailyReport.Generate);
-                    dailyReportThread.Start();
-                }
                 
             }
             catch (Exception ex)
@@ -33,7 +28,7 @@ namespace SLPReportBuilder
         {
             try
             {
-
+                
             }
             catch (Exception ex)
             {
@@ -43,16 +38,21 @@ namespace SLPReportBuilder
         {
             try
             {
-
+                
             }
             catch (Exception ex)
             {
             }
         }
-
         internal static void GenerateYearlyReport()
         {
-            
+            try
+            {
+                
+            }
+            catch (Exception ex)
+            {
+            }
         }
     }
 }

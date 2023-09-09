@@ -5,26 +5,45 @@ using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
 using SLPReportBuilder;
 using System.Globalization;
+using SLPDBLibrary;
+using SLPReportCreater;
+using System.Drawing;
 
 var logger = LoggerFactory.Create(builder => builder.AddNLog()).CreateLogger<Program>();
 logger.LogInformation("Program has started.");
 
 DateTime dateTime = DateTime.Now;
 
-ReportBuilderCore.GenerateDailyReport();
+try
+{
+    using (DatabaseContext db = new DatabaseContext())
+    {
+        var queryRegoin = (from region in db.tbRegions select region).ToList();
 
-if (DateTime.Now.DayOfWeek == DayOfWeek.Monday)
-{
-    ReportBuilderCore.GenerateWeeklyReport();
+        foreach (var region in queryRegoin)
+        {
+            if (region != null)
+            {
+                logger.LogInformation("A report generation thread is created : " + region.Name);
+
+                WorkWithExcel regionReport = new WorkWithExcel(region.ID);
+                Thread regionThread = new Thread(regionReport.Generate);
+                regionThread.Start();
+            }
+
+        }
+        
+        
+    }
 }
-if (DateTime.Now.Day == 1)
+catch (Exception ex)
 {
-    ReportBuilderCore.GenerateMonthlyReport();
+    logger.LogCritical(ex.Message);
 }
-if ((DateTime.Now.Month == 1) && (DateTime.Now.Day == 1))
-{
-    ReportBuilderCore.GenerateYearlyReport();
-}
+
+
+
+
 
 
 
