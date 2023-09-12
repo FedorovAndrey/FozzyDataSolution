@@ -26,7 +26,7 @@ try
             {
                 logger.LogInformation("A report generation thread is created : " + region.Name);
 
-                WorkWithExcel regionReport = new WorkWithExcel(region.ID);
+                WorkWithExcel regionReport = new WorkWithExcel(region.ID, region.Name);
                 Thread regionThread = new Thread(regionReport.Generate);
                 regionThread.Start();
             }
