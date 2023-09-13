@@ -151,6 +151,8 @@ namespace SLPReportCreater
 
             try
             {
+                ExcelWorksheet worksheet = excel.Workbook.Worksheets.Add("Branch List");
+
                 bResult = true;
             }
             catch(Exception ex )

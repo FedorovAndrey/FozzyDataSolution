@@ -13,5 +13,8 @@ namespace SLPDBLibrary
         public string? Vendor { get; set; }
         public string? Model { get; set; }
         public string? SerialNumber { get; set; }
+        public string? Position { get; set; }
+        public int Role { get; set; }
+        public string? Legend { get; set; }
     }
 }
