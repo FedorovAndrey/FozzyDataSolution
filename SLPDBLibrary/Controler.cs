@@ -1,0 +1,61 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace SLPDBLibrary
+{
+    public class Controler
+    {
+        public List<tbRegions> GetRegion()
+        {
+            List<tbRegions> listRegion = new List<tbRegions>();
+            try
+            {
+                using (DatabaseContext db = new DatabaseContext())
+                {
+                    var queryRegion = from regions in db.tbRegions select regions;
+                    listRegion = queryRegion.ToList<tbRegions>();
+                }
+            }
+            catch
+            {
+                return null;
+            }
+            return listRegion;
+        }
+        public List<BranchInformation> GetBranchesInformation(int regionId)
+        {
+            List<BranchInformation> branches = new List<BranchInformation>();
+
+            using (DatabaseContext db = new DatabaseContext())
+            {
+                var queryResult = (from branche in db.tbBranche
+                                   join city in db.tbCities on branche.City equals city.ID
+                                   join region in db.tbRegions on branche.Region equals region.ID
+                                   where branche.Region == regionId
+                                   orderby branche.ID
+                                   select new
+                                   {
+                                       id = branche.ID,
+                                       Region = region.Name,
+                                       City = city.Name,
+                                       Address = branche.Address,
+                                       MeterCount = (from meter in db.tbMeters where meter.BranchId == branche.ID select meter).Count()
+
+                                   });;
+
+                foreach (var item in queryResult)
+                {
+                    branches.Add(new BranchInformation { id = item.id, Region = item.Region, City = item.City, Address = item.Address, meterCount = item.MeterCount });
+                }
+                
+
+            }
+
+            return branches;
+        }
+    }
+}

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using NLog;
 using NLog.Extensions.Logging;
 using OfficeOpenXml;
+using OfficeOpenXml.Style;
 using OfficeOpenXml.Table.PivotTable;
 using SLPDBLibrary;
 using SLPHelper;
@@ -22,11 +23,9 @@ namespace SLPReportCreater
 
         private DateTime dateTime_Begin;
         private DateTime dateTime_End;
-
+        
         Microsoft.Extensions.Logging.ILogger logger ;
         ExcelPackage excel;
-
-
         public WorkWithExcel(int regonId, string regionName)
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -42,9 +41,6 @@ namespace SLPReportCreater
             try
             {
                 GenerateReport(ReportType.Day);
-
-
-
 
                 if (DateTime.Now.DayOfWeek == DayOfWeek.Monday)
                 {
@@ -103,31 +99,24 @@ namespace SLPReportCreater
 
                 logger.LogInformation("Execute a query to the database for selecting branches belonging to the region");
 
-                using (DatabaseContext db = new DatabaseContext())
-                {
-                    var queryResult = (from branche in db.tbBranche
-                                       join city in db.tbCities on branche.City equals city.ID
-                                       join region in db.tbRegions on branche.Region equals region.ID
-                                       where branche.Region == regionId
-                                       orderby branche.ID
-                                       select new
-                                       {
-                                           BrancheID = branche.ID,
-                                           BrancheRegion = region.Name,
-                                           BrancheCity = city.Name,
-                                           BrancheAddress = branche.Address
-                                       });
-                    if (queryResult != null)
-                    {
-                        foreach (var item in queryResult)
-                        {
+                List<BranchInformation> branches = new Controler().GetBranchesInformation(regionId);
 
-                            if (!GenerateBranchReportTemplate(ref excel, item.BrancheID, String.Concat(item.BrancheCity, ", ", item.BrancheAddress)))
-                            {
-                                logger.LogError("Creation of a report template for a branch " + item.BrancheAddress + " completed with an error");
-                            }
-                        }
+                if (branches != null)
+                {
+                    if (!GenerateBranchListWorksheet(ref excel, branches))
+                    {
+                        
                     }
+
+                    foreach(BranchInformation item in branches)
+                    {
+                        if (!GenerateBranchReportTemplate(ref excel, item))
+                        { 
+
+                        }
+                        
+                    }
+                    
                 }
 
                 excel.Save();
@@ -145,7 +134,7 @@ namespace SLPReportCreater
             logger.LogInformation("The task for generating the report is complete : " + reportType.ToString());
         }
 
-        private bool GenerateBranchListWorksheet(ref ExcelPackage excel, int branchId, string branchCity, string branchAddress, int branchMeterCount)
+        private bool GenerateBranchListWorksheet(ref ExcelPackage excel, List<BranchInformation> branches)
         {
             bool bResult = false;
 
@@ -153,53 +142,43 @@ namespace SLPReportCreater
             {
                 ExcelWorksheet worksheet = excel.Workbook.Worksheets.Add("Branch List");
 
-                bResult = true;
-            }
-            catch(Exception ex )
-            {
-
-            }
-            return bResult;
-        }
-
-        private bool GenerateBranchListWorksheet(ref ExcelPackage package, IQueryable data)
-        {
-            bool bResult = false;
-
-            try
-            {
-                ExcelWorksheet worksheet = package.Workbook.Worksheets.Add("Branch List");
-
                 using (ExcelRange range = worksheet.Cells["A1:A2"])
                 {
                     range.Merge = true;
+                    range.AutoFitColumns();
                     range.Style.Font.SetFromFont("Arial", 10, true, false, false, false);
                     range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
                     range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
                     range.Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thick);
                     range.SetCellValue(0, 0, "Філія");
                 }
+
                 using (ExcelRange range = worksheet.Cells["B1:B2"])
                 {
                     range.Merge = true;
+                    range.AutoFitColumns();
                     range.Style.Font.SetFromFont("Arial", 10, true, false, false, false);
                     range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
                     range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
                     range.Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thick);
                     range.SetCellValue(0, 0, "Місто");
                 }
+
                 using (ExcelRange range = worksheet.Cells["C1:C2"])
                 {
                     range.Merge = true;
+                    range.AutoFitColumns();
                     range.Style.Font.SetFromFont("Arial", 10, true, false, false, false);
                     range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
                     range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
                     range.Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thick);
                     range.SetCellValue(0, 0, "Адреса");
                 }
+
                 using (ExcelRange range = worksheet.Cells["D1:D2"])
                 {
                     range.Merge = true;
+                    range.AutoFitColumns();
                     range.Style.Font.SetFromFont("Arial", 10, true, false, false, false);
                     range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
                     range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
@@ -209,6 +188,17 @@ namespace SLPReportCreater
                 using (ExcelRange range = worksheet.Cells["E1:E2"])
                 {
                     range.Merge = true;
+                    range.AutoFitColumns();
+                    range.Style.Font.SetFromFont("Arial", 10, true, false, false, false);
+                    range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                    range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                    range.Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thick);
+                    range.SetCellValue(0, 0, "Споживання кВт*год");
+                }
+                using (ExcelRange range = worksheet.Cells["F1:F2"])
+                {
+                    range.Merge = true;
+                    range.AutoFitColumns();
                     range.Style.Font.SetFromFont("Arial", 10, true, false, false, false);
                     range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
                     range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
@@ -216,27 +206,83 @@ namespace SLPReportCreater
                     range.SetCellValue(0, 0, "Посилання");
                 }
 
+                int startRow = 3;
 
-                
+                foreach (BranchInformation item in branches)
+                {
+                    using (ExcelRange range = worksheet.Cells[String.Concat("A", startRow)])
+                    {
+                        range.Style.Font.SetFromFont("Arial", 10, true, false, false, false);
+                        range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                        range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                        range.Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thin);
+                        range.SetCellValue(0, 0, item.id.ToString());
+                    }
 
-                
+                    using (ExcelRange range = worksheet.Cells[String.Concat("B", startRow)])
+                    {
+                        range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                        range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                        range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                        range.Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thin);
+                        range.SetCellValue(0, 0, item.City);
+                    }
 
+                    using (ExcelRange range = worksheet.Cells[String.Concat("C", startRow)])
+                    {
+                        range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                        range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                        range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                        range.Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thin);
+                        range.SetCellValue(0, 0, item.Address);
+                    }
+
+                    using (ExcelRange range = worksheet.Cells[String.Concat("D", startRow)])
+                    {
+                        range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                        range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                        range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                        range.Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thin);
+                        range.Style.Numberformat.Format = "#";
+                        range.SetCellValue(0, 0, item.meterCount);
+                    }
+
+                    using (ExcelRange range = worksheet.Cells[String.Concat("E", startRow)])
+                    {
+                        range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                        range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                        range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                        range.Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thin);
+                        range.Style.Numberformat.Format = "#,##0.00";
+                        range.SetCellValue(0, 0, "0.00");
+                    }
+
+                    using (ExcelRange range = worksheet.Cells[String.Concat("F", startRow)])
+                    {
+                        range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                        range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                        range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                        range.Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thin);
+                        range.SetHyperlink(new ExcelHyperLink(String.Concat(item.id,"!A1"),"Перейти"));
+                    }
+                    startRow++;
+                }
                 bResult = true;
             }
-            catch (Exception ex)
+            catch(Exception ex )
             {
 
             }
             return bResult;
         }
-        private bool GenerateBranchReportTemplate(ref ExcelPackage package, int brancheId, string brancheName)
+        private bool GenerateBranchReportTemplate(ref ExcelPackage package, BranchInformation branch)
         {
             bool bResult = false;
 
             DateTime dateTime = DateTime.Now;
             try
             {
-                ExcelWorksheet worksheet = package.Workbook.Worksheets.Add(brancheId.ToString());
+                ExcelWorksheet worksheet = package.Workbook.Worksheets.Add(branch.id.ToString());
 
                 using (ExcelRange range = worksheet.Cells["A2:D9"])
                 {
@@ -244,7 +290,7 @@ namespace SLPReportCreater
                     range.Style.Font.SetFromFont("Arial", 12, true, false, false, false);
                     range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
                     range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
-                    range.SetCellValue(0,0,brancheName);
+                    range.SetCellValue(0, 0, String.Concat(branch.City, ",", branch.Address));
                 }
 
                 using (ExcelRange range = worksheet.Cells["F2:G2"])
@@ -286,6 +332,8 @@ namespace SLPReportCreater
                     range.Style.Font.Italic = true;
                     range.SetCellValue(0, 0, dateTime.Date.ToShortDateString() + " " + dateTime.ToShortTimeString());
                 }
+
+
 
                 bResult = true;
             }
