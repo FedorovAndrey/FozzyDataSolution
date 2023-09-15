@@ -23,6 +23,12 @@ namespace SLPWebReportApp.Controllers
             return View();
         }
 
+        public async Task IndexTask()
+        {
+            Response.ContentType = "text/html;charset=utf-8";
+            await Response.WriteAsync("<h2>Hello SLP Web Reports</h2>");
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {

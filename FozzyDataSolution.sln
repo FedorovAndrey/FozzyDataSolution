@@ -15,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SLPHelper", "SLPHelper\SLPH
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestQueryApp", "TestQueryApp\TestQueryApp.csproj", "{4D43A223-A7FD-4EC7-9F80-875505516579}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SLPWebReportApp", "SLPWebReportApp\SLPWebReportApp.csproj", "{ECEF184F-F5ED-47E2-8A64-8E153CFA7F33}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SLPReportAdminApp", "SLPReportAdminApp\SLPReportAdminApp.csproj", "{9F8E6ADC-7D64-439C-A05E-8E419B65BF5C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,10 +47,10 @@ Global
 		{4D43A223-A7FD-4EC7-9F80-875505516579}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4D43A223-A7FD-4EC7-9F80-875505516579}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4D43A223-A7FD-4EC7-9F80-875505516579}.Release|Any CPU.Build.0 = Release|Any CPU
-		{ECEF184F-F5ED-47E2-8A64-8E153CFA7F33}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{ECEF184F-F5ED-47E2-8A64-8E153CFA7F33}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{ECEF184F-F5ED-47E2-8A64-8E153CFA7F33}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{ECEF184F-F5ED-47E2-8A64-8E153CFA7F33}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F8E6ADC-7D64-439C-A05E-8E419B65BF5C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F8E6ADC-7D64-439C-A05E-8E419B65BF5C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F8E6ADC-7D64-439C-A05E-8E419B65BF5C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F8E6ADC-7D64-439C-A05E-8E419B65BF5C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

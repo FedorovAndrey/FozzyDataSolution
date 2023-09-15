@@ -110,7 +110,7 @@ namespace SLPReportCreater
 
                     foreach(BranchInformation item in branches)
                     {
-                        if (!GenerateBranchReportTemplate(ref excel, item))
+                        if (!GenerateBranchReportTemplate(ref excel, item, reportType))
                         { 
 
                         }
@@ -275,13 +275,29 @@ namespace SLPReportCreater
             }
             return bResult;
         }
-        private bool GenerateBranchReportTemplate(ref ExcelPackage package, BranchInformation branch)
+        private bool GenerateBranchReportTemplate(ref ExcelPackage package, BranchInformation branch, ReportType reportType)
         {
             bool bResult = false;
 
             DateTime dateTime = DateTime.Now;
+            string reportTitle = "";
             try
             {
+                switch (reportType)
+                {
+                    case ReportType.Day:
+                        reportTitle = String.Concat("Добовий графік спожитої електроенергії за: ", dateTime_Begin.Date.ToShortDateString());
+                        break;
+                    case ReportType.Week:
+                    case ReportType.Month:
+                    case ReportType.Year:
+                        reportTitle = String.Concat("Графік спожитої електроенергії з: ", dateTime_Begin.Date.ToShortDateString(), " по ", dateTime_End.Date.ToShortDateString());
+                        break;
+                    default:
+                        reportTitle = "Графік спожитої електроенергії";
+                        break;
+                }
+
                 ExcelWorksheet worksheet = package.Workbook.Worksheets.Add(branch.id.ToString());
 
                 using (ExcelRange range = worksheet.Cells["A2:D9"])
@@ -290,25 +306,25 @@ namespace SLPReportCreater
                     range.Style.Font.SetFromFont("Arial", 12, true, false, false, false);
                     range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
                     range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
-                    range.SetCellValue(0, 0, String.Concat(branch.City, ",", branch.Address));
+                    range.SetCellValue(0, 0, String.Concat(branch.City, ", ", branch.Address));
                 }
 
-                using (ExcelRange range = worksheet.Cells["F2:G2"])
+                using (ExcelRange range = worksheet.Cells["F6:I6"])
                 {
                     range.Merge = true;
                     range.Style.Font.SetFromFont("Arial", 10, false, true, false, false);
-                    range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Right;
+                    range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
                     range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
-                    range.SetCellValue(0, 0, "Покази лічильників на:");
+                    range.SetCellValue(0, 0, String.Concat("Покази лічильників на: ", dateTime_Begin.Date.ToShortDateString()));
                 }
 
-                using (ExcelRange range = worksheet.Cells["F3:G3"])
+                using (ExcelRange range = worksheet.Cells["F7:I7"])
                 {
                     range.Merge = true;
                     range.Style.Font.SetFromFont("Arial", 10, false, true, false, false);
-                    range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Right;
+                    range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
                     range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
-                    range.SetCellValue(0, 0, "Покази лічильників на:");
+                    range.SetCellValue(0, 0, String.Concat("Покази лічильників на: ", dateTime_End.Date.ToShortDateString()));
                 }
 
                 using (ExcelRange range = worksheet.Cells["A11:B11"])
@@ -331,6 +347,15 @@ namespace SLPReportCreater
                     range.Style.Font.Bold = true;
                     range.Style.Font.Italic = true;
                     range.SetCellValue(0, 0, dateTime.Date.ToShortDateString() + " " + dateTime.ToShortTimeString());
+                }
+                
+                using (ExcelRange range = worksheet.Cells["F11:L11"])
+                {
+                    range.Merge = true;
+                    range.Style.Font.SetFromFont("Arial", 10, true, true, false, false);
+                    range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                    range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                    range.SetCellValue(0, 0, reportTitle);
                 }
 
 
