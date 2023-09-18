@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace SLPDBLibrary
 {
-    public class Controler
+    public static class Controler
     {
-        public List<tbRegions> GetRegion()
+        public static List<tbRegions> GetRegion()
         {
             List<tbRegions> listRegion = new List<tbRegions>();
             try
@@ -26,7 +26,7 @@ namespace SLPDBLibrary
             }
             return listRegion;
         }
-        public List<BranchInformation> GetBranchesInformation(int regionId)
+        public static List<BranchInformation> GetBranchesInformation(int regionId)
         {
             List<BranchInformation> branches = new List<BranchInformation>();
 
@@ -56,6 +56,19 @@ namespace SLPDBLibrary
             }
 
             return branches;
+        }
+        public static List<tbMeters> GetMeterByBranchId(int branchID)
+        {
+            List<tbMeters> result = new List<tbMeters>();
+
+            using (DatabaseContext db = new DatabaseContext())
+            {
+                var queryResult = (from meters in db.tbMeters
+                                   where meters.BranchId == branchID
+                                   select meters);
+                result = queryResult.ToList();
+            }
+            return result;
         }
     }
 }

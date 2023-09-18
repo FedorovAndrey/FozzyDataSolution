@@ -99,7 +99,7 @@ namespace SLPReportCreater
 
                 logger.LogInformation("Execute a query to the database for selecting branches belonging to the region");
 
-                List<BranchInformation> branches = new Controler().GetBranchesInformation(regionId);
+                List<BranchInformation> branches = Controler.GetBranchesInformation(regionId);
 
                 if (branches != null)
                 {
@@ -358,6 +358,138 @@ namespace SLPReportCreater
                     range.SetCellValue(0, 0, reportTitle);
                 }
 
+                using (ExcelRange range = worksheet.Cells["A13:A14"])
+                {
+                    range.Merge = true;
+                    range.Style.Border.BorderAround(ExcelBorderStyle.Thick);
+                }
+                using (ExcelRange range = worksheet.Cells["B13:E13"])
+                {
+                    range.Merge = true;
+                    range.Style.Font.SetFromFont("Arial", 10, true, false, false, false);
+                    range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                    range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                    range.SetCellValue(0, 0, "Разом");
+                }
+                using (ExcelRange range = worksheet.Cells["B14"])
+                {
+                   
+                    range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                    range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                    range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                    range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                    range.SetCellValue(0, 0, "A+");
+                }
+                using (ExcelRange range = worksheet.Cells["C14"])
+                {
+
+                    range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                    range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                    range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                    range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                    range.SetCellValue(0, 0, "A-");
+                }
+                using (ExcelRange range = worksheet.Cells["D14"])
+                {
+
+                    range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                    range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                    range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                    range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                    range.SetCellValue(0, 0, "P+");
+                }
+                using (ExcelRange range = worksheet.Cells["E14"])
+                {
+
+                    range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                    range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                    range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                    range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                    range.SetCellValue(0, 0, "P-");
+                }
+                using (ExcelRange range = worksheet.Cells["A13:E14"])
+                {
+                    range.Style.Border.BorderAround(ExcelBorderStyle.Thick);
+                }
+
+                #region Creating table structures in a template
+
+                var meters = Controler.GetMeterByBranchId(branch.id);
+                if (meters != null)
+                {
+                    int startRegionRow = 4;
+                    int startRegionColumn = 10;
+
+                    for (int i = 0; i < meters.Count; i++)
+                    {
+                        using (ExcelRange range = worksheet.Cells[startRegionRow,startRegionColumn, startRegionRow, startRegionColumn+ 1])
+                        {
+                            range.Merge = true;
+                            range.Style.Font.SetFromFont("Arial", 10, true, false, false, false);
+                            range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                            range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                            range.SetCellValue(0, 0, meters[i].Legend);
+                        }
+                        using (ExcelRange range = worksheet.Cells[startRegionRow, startRegionColumn + 2, startRegionRow, startRegionColumn + 3])
+                        {
+                            range.Merge = true;
+                            range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                            range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                            range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                            range.SetCellValue(0, 0, meters[i].SerialNumber);
+                        }
+
+                        using (ExcelRange range = worksheet.Cells[startRegionRow + 1, startRegionColumn])
+                        {
+                            range.Merge = true;
+                            range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                            range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                            range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                            range.SetCellValue(0, 0, "A+");
+                        }
+                        using (ExcelRange range = worksheet.Cells[startRegionRow + 1, startRegionColumn + 1])
+                        {
+                            range.Merge = true;
+                            range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                            range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                            range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                            range.SetCellValue(0, 0, "A-");
+                        }
+                        using (ExcelRange range = worksheet.Cells[startRegionRow + 1, startRegionColumn + 2])
+                        {
+                            range.Merge = true;
+                            range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                            range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                            range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                            range.SetCellValue(0, 0, "P+");
+                        }
+                        using (ExcelRange range = worksheet.Cells[startRegionRow + 1, startRegionColumn + 3])
+                        {
+                            range.Merge = true;
+                            range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                            range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                            range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                            range.SetCellValue(0, 0, "P-");
+                        }
+
+                        startRegionColumn = startRegionColumn + 4;
+                    }
+                                        
+                    using (ExcelRange range = worksheet.Cells[4, 10, 5, 10 + meters.Count * 4])
+                    {
+                        range.Style.Border.BorderAround(ExcelBorderStyle.Thick);
+                    }
+
+                    worksheet.Cells[4, 10, 5, 10 + meters.Count * 4].Copy(worksheet.Cells["F13"]);
+
+                }
+                #endregion
 
 
                 bResult = true;

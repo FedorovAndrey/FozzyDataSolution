@@ -9,6 +9,7 @@ namespace SLPDBLibrary
     public class tbCities
     {
         public int ID { get; set; }
-        public string Name { get; set; }    
+        public string? Name { get; set; }    
+        public int RegionId { get; set; }
     }
 }

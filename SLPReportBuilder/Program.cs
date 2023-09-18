@@ -13,13 +13,12 @@ using System.Drawing.Printing;
 var logger = LoggerFactory.Create(builder => builder.AddNLog()).CreateLogger<Program>();
 logger.LogInformation("Program has started.");
 
-Controler dataController = new Controler();
 
 DateTime dateTime = DateTime.Now;
 
 try
 {
-    var regions = dataController.GetRegion();
+    var regions = Controler.GetRegion();
 
     WorkWithExcel regionReport = new WorkWithExcel(1, "Центр");
     Thread regionThread = new Thread(regionReport.Generate);
