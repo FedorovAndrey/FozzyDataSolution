@@ -61,7 +61,6 @@ namespace SLPReportCreater
                 logger.LogCritical(ex.Message);
             }
             
-
             logger.LogInformation("End report generation for the region ID" + regionId.ToString());
         }
         private void GenerateReport(ReportType reportType)
@@ -133,7 +132,6 @@ namespace SLPReportCreater
             
             logger.LogInformation("The task for generating the report is complete : " + reportType.ToString());
         }
-
         private bool GenerateBranchListWorksheet(ref ExcelPackage excel, List<BranchInformation> branches)
         {
             bool bResult = false;
@@ -277,6 +275,9 @@ namespace SLPReportCreater
         }
         private bool GenerateBranchReportTemplate(ref ExcelPackage package, BranchInformation branch, ReportType reportType)
         {
+            logger.LogInformation("Creating a report page template for a branch" + 
+                String.Concat(branch.City, " : ", branch.Address));
+
             bool bResult = false;
 
             DateTime dateTime = DateTime.Now;
@@ -363,6 +364,7 @@ namespace SLPReportCreater
                     range.Merge = true;
                     range.Style.Border.BorderAround(ExcelBorderStyle.Thick);
                 }
+                
                 using (ExcelRange range = worksheet.Cells["B13:E13"])
                 {
                     range.Merge = true;
@@ -371,6 +373,7 @@ namespace SLPReportCreater
                     range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
                     range.SetCellValue(0, 0, "Разом");
                 }
+                
                 using (ExcelRange range = worksheet.Cells["B14"])
                 {
                    
@@ -380,6 +383,7 @@ namespace SLPReportCreater
                     range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
                     range.SetCellValue(0, 0, "A+");
                 }
+                
                 using (ExcelRange range = worksheet.Cells["C14"])
                 {
 
@@ -389,6 +393,7 @@ namespace SLPReportCreater
                     range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
                     range.SetCellValue(0, 0, "A-");
                 }
+                
                 using (ExcelRange range = worksheet.Cells["D14"])
                 {
 
@@ -398,6 +403,7 @@ namespace SLPReportCreater
                     range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
                     range.SetCellValue(0, 0, "P+");
                 }
+                
                 using (ExcelRange range = worksheet.Cells["E14"])
                 {
 
@@ -407,6 +413,7 @@ namespace SLPReportCreater
                     range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
                     range.SetCellValue(0, 0, "P-");
                 }
+                
                 using (ExcelRange range = worksheet.Cells["A13:E14"])
                 {
                     range.Style.Border.BorderAround(ExcelBorderStyle.Thick);
