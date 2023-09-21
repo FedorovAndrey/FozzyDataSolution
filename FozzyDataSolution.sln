@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SLPMailSender", "SLPMailSen
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SLPHelper", "SLPHelper\SLPHelper.csproj", "{315AACFF-9A01-40D5-B597-AB291C3EB131}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SLPReportAdmin", "SLPReportAdmin\SLPReportAdmin.csproj", "{60BB094D-EB0E-4DEA-8825-5551C5853ABF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{315AACFF-9A01-40D5-B597-AB291C3EB131}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{315AACFF-9A01-40D5-B597-AB291C3EB131}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{315AACFF-9A01-40D5-B597-AB291C3EB131}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60BB094D-EB0E-4DEA-8825-5551C5853ABF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60BB094D-EB0E-4DEA-8825-5551C5853ABF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60BB094D-EB0E-4DEA-8825-5551C5853ABF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60BB094D-EB0E-4DEA-8825-5551C5853ABF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
