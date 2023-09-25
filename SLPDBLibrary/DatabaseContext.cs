@@ -5,7 +5,7 @@ namespace SLPDBLibrary
 {
     public class DatabaseContext:DbContext
     {
-        public DbSet<tbBranche> tbBranche { get; set; }
+        public DbSet<tbBranch> tbBranch { get; set; }
         public DbSet<tbCities> tbCities { get; set; }
         public DbSet<tbRegions> tbRegions { get; set; }
         public DbSet<tbMeters> tbMeters { get; set; }
