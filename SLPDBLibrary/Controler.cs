@@ -32,7 +32,7 @@ namespace SLPDBLibrary
 
             using (DatabaseContext db = new DatabaseContext())
             {
-                var queryResult = (from branche in db.tbBranche
+                var queryResult = (from branche in db.tbBranch
                                    join city in db.tbCities on branche.CityID equals city.ID
                                    join region in db.tbRegions on branche.RegionID equals region.ID
                                    where branche.RegionID == regionId

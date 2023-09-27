@@ -20,13 +20,15 @@ namespace SLPReportCreater
     {
         private int regionId;
         private string regionName;
+        private string reportFolderName;
 
         private DateTime dateTime_Begin;
         private DateTime dateTime_End;
         
         Microsoft.Extensions.Logging.ILogger logger ;
         ExcelPackage excel;
-        public WorkWithExcel(int regonId, string regionName)
+
+        public WorkWithExcel(int regonId, string regionName, string reportFolderName)
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
@@ -34,25 +36,31 @@ namespace SLPReportCreater
 
             this.regionId = regonId;
             this.regionName = regionName;
+            this.reportFolderName = reportFolderName;
         }
+        
         public void Generate()
         {
             logger.LogInformation("Report generation for the region ID : " + regionId.ToString());
             try
             {
-                GenerateReport(ReportType.Day);
+                StringBuilder builder = new StringBuilder(Helper.GetReportFolderByRegionName(reportFolderName, regionName));
+                builder.Append(@"\");
+                
+
+                GenerateReport(ReportType.Day, builder.ToString());
 
                 if (DateTime.Now.DayOfWeek == DayOfWeek.Monday)
                 {
-                    GenerateReport(ReportType.Week);
+                    GenerateReport(ReportType.Week, builder.ToString());
                 }
                 if (DateTime.Now.Day == 1)
                 {
-                    GenerateReport(ReportType.Month);
+                    GenerateReport(ReportType.Month, builder.ToString());
                 }
                 if (DateTime.Now.DayOfYear == 1)
                 {
-                    GenerateReport(ReportType.Year);
+                    GenerateReport(ReportType.Year, builder.ToString());
                 }
 
             }
@@ -63,7 +71,8 @@ namespace SLPReportCreater
             
             logger.LogInformation("End report generation for the region ID" + regionId.ToString());
         }
-        private void GenerateReport(ReportType reportType)
+        
+        private void GenerateReport(ReportType reportType, string reportFolderName)
         {
             logger.LogInformation("A task is started to generate the report : " + reportType.ToString());
 
@@ -91,10 +100,10 @@ namespace SLPReportCreater
             #region Create excel Workbook
             try
             {
-                FileInfo fileInfo = new FileInfo(Helper.GetFileName(regionName, reportType.ToString()));
+                FileInfo fileInfo = new FileInfo(Helper.GetFileName(regionName,reportType.ToString(), reportFolderName));
                 excel = new ExcelPackage(fileInfo);
 
-                logger.LogInformation("Creating a report file  : " + fileInfo.FullName);
+                //logger.LogInformation("Creating a report file  : " + fileInfo.FullName);
 
                 logger.LogInformation("Execute a query to the database for selecting branches belonging to the region");
 
@@ -132,6 +141,7 @@ namespace SLPReportCreater
             
             logger.LogInformation("The task for generating the report is complete : " + reportType.ToString());
         }
+        
         private bool GenerateBranchListWorksheet(ref ExcelPackage excel, List<BranchInformation> branches)
         {
             bool bResult = false;
@@ -273,6 +283,7 @@ namespace SLPReportCreater
             }
             return bResult;
         }
+        
         private bool GenerateBranchReportTemplate(ref ExcelPackage package, BranchInformation branch, ReportType reportType)
         {
             logger.LogInformation("Creating a report page template for a branch" + 

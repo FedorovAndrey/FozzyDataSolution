@@ -9,6 +9,14 @@ namespace SLPDBLibrary
         public DbSet<tbCities> tbCities { get; set; }
         public DbSet<tbRegions> tbRegions { get; set; }
         public DbSet<tbMeters> tbMeters { get; set; }
+        public DbSet<tbBranchSquare> tbBranchSquare { get; set; }
+        public DbSet<tbCategory> tbCategory { get; set; }
+        public DbSet<tbClimate> tbClimates { get; set; }
+        public DbSet<tbMeterRoles> tbMeterRoles { get; set; }
+        public DbSet<tbTradingSquare> tbTradingSquare { get; set; }
+        public DbSet<tbTypeOfHeating> tbTypeOfHeatings { get; set; }
+        public DbSet<tbMeterType> tbMeterTypes { get; set; }
+
         public DatabaseContext()
         {
             

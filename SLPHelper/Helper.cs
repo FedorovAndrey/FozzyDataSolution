@@ -3,20 +3,52 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace SLPHelper
 {
     public static class Helper
     {
-        public static string GetFileName(string regionName, string reportType)
-        { 
-            StringBuilder stringBuilder = new StringBuilder(DateTime.Now.ToString().Replace(".", "-").Replace(":", "-"));
-            stringBuilder.Append("_"+ regionName);
-            stringBuilder.Append("_" + reportType);
-            stringBuilder.Append(".xlsx");
+        public static string GetFileName(string regionName, string reportType, string reportFolderName)
+        {
+            string sResult = "";
 
-            return stringBuilder.ToString();
+            try
+            {
+                StringBuilder stringBuilder = new StringBuilder(DateTime.Now.ToString().Replace(".", "-").Replace(":", "-"));
+                stringBuilder.Append("_" + regionName);
+                stringBuilder.Append("_" + reportType);
+                stringBuilder.Append(".xlsx");
+
+                sResult =String.Concat(reportFolderName, stringBuilder.ToString());
+            }
+            catch (Exception e) 
+            {
+                sResult = String.Empty;
+            }
+                   
+
+            return sResult;
 
         }
+        public static string GetReportFolderByRegionName(string reportFolder, string regionName) {
+            string sResult = "";
+
+            try
+            {
+                string folderName = String.Concat(reportFolder, @"\", regionName);
+
+                if (!Directory.Exists(folderName))
+                {
+                    Directory.CreateDirectory(folderName);
+                }
+                sResult = folderName;
+            }
+            catch (Exception e) 
+            { 
+            }
+            return sResult;
+        }
+
     }
 }
