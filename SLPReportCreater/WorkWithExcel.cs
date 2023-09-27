@@ -274,7 +274,7 @@ namespace SLPReportCreater
             }
             catch(Exception ex )
             {
-
+                logger.LogError(ex.Message);
             }
             return bResult;
         }
@@ -504,7 +504,8 @@ namespace SLPReportCreater
                 bResult = true;
             }
             catch (Exception ex) 
-            { 
+            {
+                logger.LogError(ex.Message);
             }
             return bResult;
         }

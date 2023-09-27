@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using NLog.Extensions.Logging;
 using SLPDBLibrary;
 using SLPReportCreater;
+using SLPMailSender;
 using System.Drawing;
 
 var logger = LoggerFactory.Create(builder => builder.AddNLog()).CreateLogger<Program>();
@@ -31,12 +32,17 @@ try
             WorkWithExcel regionReport = new WorkWithExcel(region.ID, region.Name, reportFolder);
             Thread regionThread = new Thread(regionReport.Generate);
             regionThread.Start();
-            regionThread.Join();
+            
         }
     }
-
+    
     logger.LogInformation("All threads are complete");
 
+    using (WorkWithMail mailSender = new WorkWithMail())
+    {
+        mailSender.GetConfig();
+        _ = mailSender.SendMailAsync("interandry@gmail.com", "TEST SENDER SLP REPORTS", "TEST Sender report sender");
+    }
 }
 catch (Exception ex)
 {
