@@ -3,13 +3,10 @@ using Microsoft.Extensions.Configuration;
 using NLog.Extensions.Logging;
 using SLPDBLibrary;
 using SLPReportCreater;
-
+using System.Drawing;
 
 var logger = LoggerFactory.Create(builder => builder.AddNLog()).CreateLogger<Program>();
 logger.LogInformation("Program has started.");
-
-
-
 
 DateTime dateTime = DateTime.Now;
 
@@ -26,10 +23,6 @@ try
 
     var regions = Controler.GetRegion();
 
-    //WorkWithExcel regionReport = new WorkWithExcel(1, "Центр");
-    //Thread regionThread = new Thread(regionReport.Generate);
-    //regionThread.Start();
-
     if (regions != null)
     {
         foreach (var region in regions)
@@ -38,10 +31,12 @@ try
             WorkWithExcel regionReport = new WorkWithExcel(region.ID, region.Name, reportFolder);
             Thread regionThread = new Thread(regionReport.Generate);
             regionThread.Start();
+            regionThread.Join();
         }
     }
-    
-    
+
+    logger.LogInformation("All threads are complete");
+
 }
 catch (Exception ex)
 {

@@ -74,7 +74,7 @@ namespace SLPReportCreater
         
         private void GenerateReport(ReportType reportType, string reportFolderName)
         {
-            logger.LogInformation("A task is started to generate the report : " + reportType.ToString());
+            
 
             switch (reportType)
             {
@@ -102,10 +102,6 @@ namespace SLPReportCreater
             {
                 FileInfo fileInfo = new FileInfo(Helper.GetFileName(regionName,reportType.ToString(), reportFolderName));
                 excel = new ExcelPackage(fileInfo);
-
-                //logger.LogInformation("Creating a report file  : " + fileInfo.FullName);
-
-                logger.LogInformation("Execute a query to the database for selecting branches belonging to the region");
 
                 List<BranchInformation> branches = Controler.GetBranchesInformation(regionId);
 
@@ -138,8 +134,7 @@ namespace SLPReportCreater
             }
 
             #endregion
-            
-            logger.LogInformation("The task for generating the report is complete : " + reportType.ToString());
+
         }
         
         private bool GenerateBranchListWorksheet(ref ExcelPackage excel, List<BranchInformation> branches)
@@ -286,9 +281,6 @@ namespace SLPReportCreater
         
         private bool GenerateBranchReportTemplate(ref ExcelPackage package, BranchInformation branch, ReportType reportType)
         {
-            logger.LogInformation("Creating a report page template for a branch" + 
-                String.Concat(branch.City, " : ", branch.Address));
-
             bool bResult = false;
 
             DateTime dateTime = DateTime.Now;
@@ -508,8 +500,7 @@ namespace SLPReportCreater
 
                 }
                 #endregion
-
-
+                
                 bResult = true;
             }
             catch (Exception ex) 
