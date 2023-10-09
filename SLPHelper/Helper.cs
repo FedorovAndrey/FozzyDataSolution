@@ -50,5 +50,29 @@ namespace SLPHelper
             return sResult;
         }
 
+        public static bool ClearReportFolder(string reportFolder) {
+            bool bResult = false;
+            string[] files;
+
+            try
+            {
+                if (Directory.Exists(reportFolder))
+                {
+                    files = Directory.GetFiles(reportFolder);
+
+                    for (int i = 0; i < files.Length; i++)
+                    {
+                        File.Delete(files[i]);
+                    }
+                }
+                bResult = true;
+            }
+            catch(Exception e) {
+
+            }
+
+            return bResult;
+        }
+
     }
 }

@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SLPDBLibrary\SLPDBLibrary.csproj" />
     <ProjectReference Include="..\SLPHelper\SLPHelper.csproj" />
+    <ProjectReference Include="..\SLPMailSender\SLPMailSender.csproj" />
   </ItemGroup>
 
 </Project>

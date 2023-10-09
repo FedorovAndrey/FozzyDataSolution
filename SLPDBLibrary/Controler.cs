@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MimeKit;
+using Org.BouncyCastle.Tls.Crypto;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -51,7 +53,6 @@ namespace SLPDBLibrary
                 {
                     branches.Add(new BranchInformation { id = item.id, Region = item.Region, City = item.City, Address = item.Address, meterCount = item.MeterCount });
                 }
-                
 
             }
 
@@ -69,6 +70,33 @@ namespace SLPDBLibrary
                 result = queryResult.ToList();
             }
             return result;
+        }
+        public static List<MailingAddress> GetListMailing(int regionId)
+        {
+            List<MailingAddress> lMailingList = new List<MailingAddress>();
+
+            try {
+                using(DatabaseContext db = new DatabaseContext()) {
+                    
+                    var query = (from employee in db.tbEmployees 
+                                where employee.Mailing == regionId ||
+                                employee.Mailing == 0 
+                                 select employee).ToList();
+
+                    foreach(var employee in query) 
+                    {
+
+                        MailingAddress mailAddress = new() { Name = String.Concat(employee.FirstName, " ", employee.LastName), Mail = employee.Email};
+                        lMailingList.Add(mailAddress);
+                    }
+
+                }
+            }
+            catch (Exception e)
+            {
+                return null;
+            }
+            return lMailingList;
         }
     }
 }

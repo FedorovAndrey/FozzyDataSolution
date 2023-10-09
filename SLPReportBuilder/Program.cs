@@ -19,7 +19,7 @@ try
 
     if (!Directory.Exists(reportFolder))
     {
-        Directory.CreateDirectory(reportFolder);
+        _ = Directory.CreateDirectory(reportFolder);
     }
 
     var regions = Controler.GetRegion();
@@ -38,11 +38,11 @@ try
     
     logger.LogInformation("All threads are complete");
 
-    using (WorkWithMail mailSender = new WorkWithMail())
-    {
-        mailSender.GetConfig();
-        _ = mailSender.SendMailAsync("interandry@gmail.com", "TEST SENDER SLP REPORTS", "TEST Sender report sender");
-    }
+    //using (WorkWithMail mailSender = new WorkWithMail())
+    //{
+    //    mailSender.GetConfig();
+    //    _ = mailSender.SendMailAsync("interandry@gmail.com", "TEST SENDER SLP REPORTS", "TEST Sender report sender");
+    //}
 }
 catch (Exception ex)
 {

@@ -1,16 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore.Query.Internal;
-using Microsoft.Extensions.Logging;
-using NLog;
+﻿using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
-using OfficeOpenXml.Table.PivotTable;
 using SLPDBLibrary;
 using SLPHelper;
-using System;
-using System.Collections.Immutable;
-using System.Data;
-using System.Data.Entity;
+using SLPMailSender;
 using System.Drawing;
 using System.Text;
 
@@ -28,40 +22,75 @@ namespace SLPReportCreater
         Microsoft.Extensions.Logging.ILogger logger ;
         ExcelPackage excel;
 
-        public WorkWithExcel(int regonId, string regionName, string reportFolderName)
+        public WorkWithExcel(int regionId, string regionName, string reportFolderName)
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
             logger = LoggerFactory.Create(builder => builder.AddNLog()).CreateLogger<WorkWithExcel>();
 
-            this.regionId = regonId;
+            this.regionId = regionId;
             this.regionName = regionName;
             this.reportFolderName = reportFolderName;
         }
         
-        public void Generate()
+        public async void Generate()
         {
+            string[] atachedFileName = {""};
+
             logger.LogInformation("Report generation for the region ID : " + regionId.ToString());
             try
             {
-                StringBuilder builder = new StringBuilder(Helper.GetReportFolderByRegionName(reportFolderName, regionName));
-                builder.Append(@"\");
-                
+                StringBuilder sReportFolderByRegion = new StringBuilder(Helper.GetReportFolderByRegionName(reportFolderName, regionName));
+                sReportFolderByRegion.Append(@"\");
 
-                GenerateReport(ReportType.Day, builder.ToString());
+                #region report generation unit
+
+                GenerateReport(ReportType.Day, sReportFolderByRegion.ToString());
 
                 if (DateTime.Now.DayOfWeek == DayOfWeek.Monday)
                 {
-                    GenerateReport(ReportType.Week, builder.ToString());
+                    GenerateReport(ReportType.Week, sReportFolderByRegion.ToString());
                 }
                 if (DateTime.Now.Day == 1)
                 {
-                    GenerateReport(ReportType.Month, builder.ToString());
+                    GenerateReport(ReportType.Month, sReportFolderByRegion.ToString());
                 }
                 if (DateTime.Now.DayOfYear == 1)
                 {
-                    GenerateReport(ReportType.Year, builder.ToString());
+                    GenerateReport(ReportType.Year, sReportFolderByRegion.ToString());
                 }
+                #endregion
+
+
+                #region Preparing a list of addresses for mailing reports
+
+                List<MailingAddress> mailsAdress = Controler.GetListMailing(regionId);
+
+                if (mailsAdress != null && mailsAdress.Count > 0)
+                {
+                    using (WorkWithMail mails = new WorkWithMail())
+                    {
+                        mails.GetConfig();
+
+                        #region Preparing a list of files to be sent
+
+                        if (Directory.Exists(sReportFolderByRegion.ToString()))
+                        {
+                            atachedFileName = Directory.GetFiles(sReportFolderByRegion.ToString());
+                        }
+                        #endregion
+
+                        await mails.SendMailAsync(regionId, regionName, mailsAdress, atachedFileName);
+
+                        if (!Helper.ClearReportFolder(sReportFolderByRegion.ToString()))
+                        {
+                            logger.LogError("Clearing the reports folder ended with an error");
+                        }
+
+                    }
+                }
+
+                #endregion
 
             }
             catch (Exception ex)

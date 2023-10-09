@@ -16,6 +16,8 @@ namespace SLPDBLibrary
         public DbSet<tbTradingSquare> tbTradingSquare { get; set; }
         public DbSet<tbTypeOfHeating> tbTypeOfHeatings { get; set; }
         public DbSet<tbMeterType> tbMeterTypes { get; set; }
+        public DbSet<tbEmployees> tbEmployees { get; set; }
+        
 
         public DatabaseContext()
         {
