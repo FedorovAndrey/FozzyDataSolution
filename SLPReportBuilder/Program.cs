@@ -24,17 +24,21 @@ try
 
     var regions = Controler.GetRegion();
 
-    if (regions != null)
-    {
-        foreach (var region in regions)
-        {
-            logger.LogInformation("A report generation thread is created : " + region.Name);
-            WorkWithExcel regionReport = new WorkWithExcel(region.ID, region.Name, reportFolder);
-            Thread regionThread = new Thread(regionReport.Generate);
-            regionThread.Start();
+    WorkWithExcel regionReport = new WorkWithExcel(1, "Центр", reportFolder);
+    Thread regionThread = new Thread(regionReport.Generate);
+    regionThread.Start();
+
+    //if (regions != null)
+    //{
+    //    foreach (var region in regions)
+    //    {
+    //        logger.LogInformation("A report generation thread is created : " + region.Name);
+    //        WorkWithExcel regionReport = new WorkWithExcel(region.ID, region.Name, reportFolder);
+    //        Thread regionThread = new Thread(regionReport.Generate);
+    //        regionThread.Start();
             
-        }
-    }
+    //    }
+    //}
     
     logger.LogInformation("All threads are complete");
 

@@ -7,6 +7,7 @@ using SLPHelper;
 using SLPMailSender;
 using System.Drawing;
 using System.Text;
+using System.Xml.Linq;
 
 namespace SLPReportCreater
 {
@@ -134,8 +135,9 @@ namespace SLPReportCreater
 
                 List<BranchInformation> branches = Controler.GetBranchesInformation(regionId);
 
-                if (branches != null)
+                if (branches != null && branches.Count > 0)
                 {
+                    
                     if (!GenerateBranchListWorksheet(ref excel, branches))
                     {
                         
@@ -143,11 +145,19 @@ namespace SLPReportCreater
 
                     foreach(BranchInformation item in branches)
                     {
-                        if (!GenerateBranchReportTemplate(ref excel, item, reportType))
-                        { 
+                        ExcelWorksheet worksheet = excel.Workbook.Worksheets.Add(item.id.ToString());
+                        
+                        if (!GenerateBranchReportTemplate(ref worksheet, item, reportType))
+                        {
+                            string errMessage = String.Concat("Generating a report template for the branch ", item.Address, " completed with an error.");
+                            throw new Exception(errMessage);
 
                         }
-                        
+                        if (!FillBranchReportOfData(ref worksheet, item, reportType))
+                        {
+
+                        }
+
                     }
                     
                 }
@@ -308,7 +318,7 @@ namespace SLPReportCreater
             return bResult;
         }
         
-        private bool GenerateBranchReportTemplate(ref ExcelPackage package, BranchInformation branch, ReportType reportType)
+        private bool GenerateBranchReportTemplate(ref ExcelWorksheet worksheet, BranchInformation branch, ReportType reportType)
         {
             bool bResult = false;
 
@@ -331,7 +341,7 @@ namespace SLPReportCreater
                         break;
                 }
 
-                ExcelWorksheet worksheet = package.Workbook.Worksheets.Add(branch.id.ToString());
+                //ExcelWorksheet worksheet = package.Workbook.Worksheets.Add(branch.id.ToString());
 
                 using (ExcelRange range = worksheet.Cells["A2:D9"])
                 {
@@ -454,7 +464,7 @@ namespace SLPReportCreater
                 #region Creating table structures in a template
 
                 var meters = Controler.GetMeterByBranchId(branch.id);
-                if (meters != null)
+                if (meters != null && meters.Count > 0)
                 {
                     int startRegionRow = 4;
                     int startRegionColumn = 10;
@@ -537,6 +547,20 @@ namespace SLPReportCreater
                 logger.LogError(ex.Message);
             }
             return bResult;
+        }
+        private bool FillBranchReportOfData(ref ExcelWorksheet worksheet, BranchInformation branch, ReportType reportType)
+        {
+            bool bResult = true;
+
+            try {
+                List<object> data = Controler.GetMeterReport(this.dateTime_Begin, this.dateTime_End); 
+                bResult = true;
+            }
+            catch (Exception ex)
+            { 
+            }
+            return bResult;
+
         }
     }
 

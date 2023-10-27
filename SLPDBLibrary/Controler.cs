@@ -22,7 +22,7 @@ namespace SLPDBLibrary
                     listRegion = queryRegion.ToList<tbRegions>();
                 }
             }
-            catch
+            catch(Exception ex)
             {
                 return null;
             }
@@ -98,5 +98,26 @@ namespace SLPDBLibrary
             }
             return lMailingList;
         }
+        public static List<object> GetMeterReport(DateTime timestamp_begin, DateTime timestamp_end)
+        {
+            List<object> list = new List<object>();
+
+            try
+            {
+                using (DatabaseContext db = new DatabaseContext())
+                {
+                    var query = (from item in db.trend_datas
+                                 where item.timestamp > timestamp_begin.AddHours (-1) &&
+                                 item.timestamp < timestamp_begin.AddHours(1)
+                                 select item).ToList();
+                }
+            }
+            catch (Exception ex)
+            { 
+
+            }
+            return list;
+        }
+
     }
 }

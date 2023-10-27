@@ -12,7 +12,7 @@ namespace SLPDBLibrary
     {
         public int ID { get; set; }
         public int BranchId { get; set; }
-        public int Role { get; set; }
+        public int RoleId { get; set; }
         public int TypeID { get; set; }
         public string? Vendor { get; set; }
         public string? Model { get; set; }
