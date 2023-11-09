@@ -1,10 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
 using SLPDBLibrary;
 using SLPReportCreater;
-using SLPMailSender;
-using System.Drawing;
 
 var logger = LoggerFactory.Create(builder => builder.AddNLog()).CreateLogger<Program>();
 logger.LogInformation("Program has started.");
@@ -36,10 +34,10 @@ try
     //        WorkWithExcel regionReport = new WorkWithExcel(region.ID, region.Name, reportFolder);
     //        Thread regionThread = new Thread(regionReport.Generate);
     //        regionThread.Start();
-            
+
     //    }
     //}
-    
+
     logger.LogInformation("All threads are complete");
 
     //using (WorkWithMail mailSender = new WorkWithMail())

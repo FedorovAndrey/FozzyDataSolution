@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
+﻿using System.Text;
 
 namespace SLPHelper
 {
@@ -20,18 +15,19 @@ namespace SLPHelper
                 stringBuilder.Append("_" + reportType);
                 stringBuilder.Append(".xlsx");
 
-                sResult =String.Concat(reportFolderName, stringBuilder.ToString());
+                sResult = String.Concat(reportFolderName, stringBuilder.ToString());
             }
-            catch (Exception e) 
+            catch (Exception e)
             {
                 sResult = String.Empty;
             }
-                   
+
 
             return sResult;
 
         }
-        public static string GetReportFolderByRegionName(string reportFolder, string regionName) {
+        public static string GetReportFolderByRegionName(string reportFolder, string regionName)
+        {
             string sResult = "";
 
             try
@@ -44,13 +40,14 @@ namespace SLPHelper
                 }
                 sResult = folderName;
             }
-            catch (Exception e) 
-            { 
+            catch (Exception e)
+            {
             }
             return sResult;
         }
 
-        public static bool ClearReportFolder(string reportFolder) {
+        public static bool ClearReportFolder(string reportFolder)
+        {
             bool bResult = false;
             string[] files;
 
@@ -67,7 +64,8 @@ namespace SLPHelper
                 }
                 bResult = true;
             }
-            catch(Exception e) {
+            catch (Exception e)
+            {
 
             }
 

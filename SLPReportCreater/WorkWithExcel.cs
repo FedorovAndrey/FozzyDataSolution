@@ -1,13 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
-using NLog.Extensions.Logging;
+﻿using System.Text;
+using NLog;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using SLPDBLibrary;
 using SLPHelper;
 using SLPMailSender;
-using System.Drawing;
-using System.Text;
-using System.Xml.Linq;
 
 namespace SLPReportCreater
 {
@@ -19,26 +16,24 @@ namespace SLPReportCreater
 
         private DateTime dateTime_Begin;
         private DateTime dateTime_End;
-        
-        Microsoft.Extensions.Logging.ILogger logger ;
+
+        //Microsoft.Extensions.Logging.ILogger logger ;
+        private Logger logger = LogManager.GetLogger("logger");
         ExcelPackage excel;
 
         public WorkWithExcel(int regionId, string regionName, string reportFolderName)
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-
-            logger = LoggerFactory.Create(builder => builder.AddNLog()).CreateLogger<WorkWithExcel>();
-
             this.regionId = regionId;
             this.regionName = regionName;
             this.reportFolderName = reportFolderName;
         }
-        
+
         public async void Generate()
         {
-            string[] atachedFileName = {""};
+            string[] atachedFileName = { "" };
 
-            logger.LogInformation("Report generation for the region ID : " + regionId.ToString());
+            logger.Info("Report generation for the region ID : " + regionId.ToString());
             try
             {
                 StringBuilder sReportFolderByRegion = new StringBuilder(Helper.GetReportFolderByRegionName(reportFolderName, regionName));
@@ -50,20 +45,23 @@ namespace SLPReportCreater
 
                 if (DateTime.Now.DayOfWeek == DayOfWeek.Monday)
                 {
+
                     GenerateReport(ReportType.Week, sReportFolderByRegion.ToString());
                 }
                 if (DateTime.Now.Day == 1)
                 {
+
                     GenerateReport(ReportType.Month, sReportFolderByRegion.ToString());
                 }
                 if (DateTime.Now.DayOfYear == 1)
                 {
+
                     GenerateReport(ReportType.Year, sReportFolderByRegion.ToString());
                 }
                 #endregion
 
-
                 #region Preparing a list of addresses for mailing reports
+                logger.Info("Creating a mailing list for reports");
 
                 List<MailingAddress> mailsAdress = Controler.GetListMailing(regionId);
 
@@ -71,21 +69,26 @@ namespace SLPReportCreater
                 {
                     using (WorkWithMail mails = new WorkWithMail())
                     {
+                        logger.Info("Obtaining mail server configuration");
                         mails.GetConfig();
 
                         #region Preparing a list of files to be sent
 
+                        logger.Info("Preparing a list of files to be sent");
                         if (Directory.Exists(sReportFolderByRegion.ToString()))
                         {
                             atachedFileName = Directory.GetFiles(sReportFolderByRegion.ToString());
                         }
                         #endregion
 
+                        logger.Info("Call of asynchronous method for sending reports");
+
                         await mails.SendMailAsync(regionId, regionName, mailsAdress, atachedFileName);
 
+                        logger.Info("Clearing the Reporting Documents Storage Folder");
                         if (!Helper.ClearReportFolder(sReportFolderByRegion.ToString()))
                         {
-                            logger.LogError("Clearing the reports folder ended with an error");
+                            logger.Error("Clearing the reports folder ended with an error");
                         }
 
                     }
@@ -96,31 +99,38 @@ namespace SLPReportCreater
             }
             catch (Exception ex)
             {
-                logger.LogCritical(ex.Message);
+                logger.Error(ex.Message);
             }
-            
-            logger.LogInformation("End report generation for the region ID" + regionId.ToString());
+
+            logger.Info("End report generation for the region ID" + regionId.ToString());
         }
-        
         private void GenerateReport(ReportType reportType, string reportFolderName)
         {
-            
+            logger.Info("Generating reports for the region : " + reportFolderName);
 
             switch (reportType)
             {
                 case ReportType.Day:
+                    logger.Info("Generation of daily consumption reports");
+
                     dateTime_Begin = DateTime.Today.AddDays(-1);
                     dateTime_End = DateTime.Today;
                     break;
                 case ReportType.Week:
+                    logger.Info("Generation of weekly consumption reports");
+
                     dateTime_Begin = DateTime.Today.AddDays(-7).AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
-                    dateTime_End = DateTime.Today.AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1)); 
+                    dateTime_End = DateTime.Today.AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
                     break;
                 case ReportType.Month:
+                    logger.Info("Generation of monthly consumption reports");
+
                     dateTime_Begin = new DateTime(DateTime.Today.Year, DateTime.Today.AddMonths(-1).Month, 1);
                     dateTime_End = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
                     break;
                 case ReportType.Year:
+                    logger.Info("Generation of annual consumption reports");
+
                     dateTime_Begin = new DateTime(DateTime.Today.AddYears(-1).Year, 1, 1);
                     dateTime_End = new DateTime(DateTime.Today.Year, 1, 1);
                     break;
@@ -128,54 +138,63 @@ namespace SLPReportCreater
             }
 
             #region Create excel Workbook
+            logger.Info("Creating a report file for a region  : " + reportFolderName);
+
             try
             {
-                FileInfo fileInfo = new FileInfo(Helper.GetFileName(regionName,reportType.ToString(), reportFolderName));
+                FileInfo fileInfo = new FileInfo(Helper.GetFileName(regionName, reportType.ToString(), reportFolderName));
                 excel = new ExcelPackage(fileInfo);
+
+                logger.Info("Creating a list of branches for a region  : " + reportFolderName);
 
                 List<BranchInformation> branches = Controler.GetBranchesInformation(regionId);
 
+                logger.Info("The list of branches for reporting contains  : " + branches.Count + " items.");
                 if (branches != null && branches.Count > 0)
                 {
-                    
+                    logger.Info("Creating a worksheet with a list of branches");
                     if (!GenerateBranchListWorksheet(ref excel, branches))
                     {
-                        
+                        throw new Exception("Error creating branch list worksheet");
                     }
 
-                    foreach(BranchInformation item in branches)
+                    foreach (BranchInformation item in branches)
                     {
+                        logger.Info("Creating a report template for a branch : " + item.Address);
                         ExcelWorksheet worksheet = excel.Workbook.Worksheets.Add(item.id.ToString());
-                        
+
                         if (!GenerateBranchReportTemplate(ref worksheet, item, reportType))
                         {
                             string errMessage = String.Concat("Generating a report template for the branch ", item.Address, " completed with an error.");
                             throw new Exception(errMessage);
 
                         }
+
+                        logger.Info("Call of the function of filling with report data for a branch  : " + item.Address);
                         if (!FillBranchReportOfData(ref worksheet, item, reportType))
                         {
-
+                            throw new Exception("Error receiving data for report generation");
                         }
 
+
+
                     }
-                    
+
                 }
 
                 excel.Save();
             }
-            catch(Exception ex) 
+            catch (Exception ex)
             {
-                logger.LogError(ex.Message);
+                logger.Error(ex.Message);
             }
-            finally 
-            { 
+            finally
+            {
             }
 
             #endregion
 
         }
-        
         private bool GenerateBranchListWorksheet(ref ExcelPackage excel, List<BranchInformation> branches)
         {
             bool bResult = false;
@@ -305,19 +324,18 @@ namespace SLPReportCreater
                         range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
                         range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
                         range.Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thin);
-                        range.SetHyperlink(new ExcelHyperLink(String.Concat(item.id,"!A1"),"Перейти"));
+                        range.SetHyperlink(new ExcelHyperLink(String.Concat(item.id, "!A1"), "Перейти"));
                     }
                     startRow++;
                 }
                 bResult = true;
             }
-            catch(Exception ex )
+            catch (Exception ex)
             {
-                logger.LogError(ex.Message);
+                logger.Error(ex.Message);
             }
             return bResult;
         }
-        
         private bool GenerateBranchReportTemplate(ref ExcelWorksheet worksheet, BranchInformation branch, ReportType reportType)
         {
             bool bResult = false;
@@ -391,7 +409,7 @@ namespace SLPReportCreater
                     range.Style.Font.Italic = true;
                     range.SetCellValue(0, 0, dateTime.Date.ToShortDateString() + " " + dateTime.ToShortTimeString());
                 }
-                
+
                 using (ExcelRange range = worksheet.Cells["F11:L11"])
                 {
                     range.Merge = true;
@@ -406,7 +424,7 @@ namespace SLPReportCreater
                     range.Merge = true;
                     range.Style.Border.BorderAround(ExcelBorderStyle.Thick);
                 }
-                
+
                 using (ExcelRange range = worksheet.Cells["B13:E13"])
                 {
                     range.Merge = true;
@@ -415,17 +433,17 @@ namespace SLPReportCreater
                     range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
                     range.SetCellValue(0, 0, "Разом");
                 }
-                
+
                 using (ExcelRange range = worksheet.Cells["B14"])
                 {
-                   
+
                     range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
                     range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
                     range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
                     range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
                     range.SetCellValue(0, 0, "A+");
                 }
-                
+
                 using (ExcelRange range = worksheet.Cells["C14"])
                 {
 
@@ -435,7 +453,7 @@ namespace SLPReportCreater
                     range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
                     range.SetCellValue(0, 0, "A-");
                 }
-                
+
                 using (ExcelRange range = worksheet.Cells["D14"])
                 {
 
@@ -445,7 +463,7 @@ namespace SLPReportCreater
                     range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
                     range.SetCellValue(0, 0, "P+");
                 }
-                
+
                 using (ExcelRange range = worksheet.Cells["E14"])
                 {
 
@@ -455,7 +473,7 @@ namespace SLPReportCreater
                     range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
                     range.SetCellValue(0, 0, "P-");
                 }
-                
+
                 using (ExcelRange range = worksheet.Cells["A13:E14"])
                 {
                     range.Style.Border.BorderAround(ExcelBorderStyle.Thick);
@@ -471,7 +489,7 @@ namespace SLPReportCreater
 
                     for (int i = 0; i < meters.Count; i++)
                     {
-                        using (ExcelRange range = worksheet.Cells[startRegionRow,startRegionColumn, startRegionRow, startRegionColumn+ 1])
+                        using (ExcelRange range = worksheet.Cells[startRegionRow, startRegionColumn, startRegionRow, startRegionColumn + 1])
                         {
                             range.Merge = true;
                             range.Style.Font.SetFromFont("Arial", 10, true, false, false, false);
@@ -529,7 +547,7 @@ namespace SLPReportCreater
 
                         startRegionColumn = startRegionColumn + 4;
                     }
-                                        
+
                     using (ExcelRange range = worksheet.Cells[4, 10, 5, 10 + meters.Count * 4])
                     {
                         range.Style.Border.BorderAround(ExcelBorderStyle.Thick);
@@ -539,25 +557,34 @@ namespace SLPReportCreater
 
                 }
                 #endregion
-                
+
                 bResult = true;
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
-                logger.LogError(ex.Message);
+                logger.Error(ex.Message);
             }
             return bResult;
         }
         private bool FillBranchReportOfData(ref ExcelWorksheet worksheet, BranchInformation branch, ReportType reportType)
         {
-            bool bResult = true;
+            bool bResult = false;
 
-            try {
-                List<object> data = Controler.GetMeterReport(this.dateTime_Begin, this.dateTime_End); 
+            try
+            {
+                List<object> dataList = new List<object>();
+                logger.Info("Getting the list of metering units for a branch : " + branch.Address);
+
+                if (!Controler.GetMeterReport(ref branch, this.dateTime_Begin, this.dateTime_End))
+                {
+                    throw new Exception("Failed to retrieve data for the report  : " + branch.Address);
+                }
+
                 bResult = true;
             }
             catch (Exception ex)
-            { 
+            {
+                logger.Error(ex.Message);
             }
             return bResult;
 

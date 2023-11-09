@@ -1,10 +1,8 @@
-﻿using MailKit.Net.Smtp;
+﻿using System.Net;
+using MailKit.Net.Smtp;
 using Microsoft.Extensions.Configuration;
 using MimeKit;
-using System.Net;
-using Microsoft.Extensions.Logging;
 using NLog;
-using System.ServiceProcess;
 using SLPDBLibrary;
 
 
@@ -28,11 +26,11 @@ namespace SLPMailSender
         private string? fromMail;
         private string? pwd;
 
-        private Logger _logger;
+        private static Logger logger = LogManager.GetLogger("logger");
 
         public WorkWithMail()
         {
-            this._logger = LogManager.GetCurrentClassLogger();
+            //this.logger = LogManager.GetCurrentClassLogger();
 
         }
         public void Dispose()
@@ -45,11 +43,11 @@ namespace SLPMailSender
 
             try
             {
-                _logger.Info("Start Mail sender configuration");
+                logger.Info("Start Mail sender configuration");
 
                 var configBuilder = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
                 var configSection = configBuilder.GetSection("MailSettings");
-                
+
                 useSSL = Convert.ToBoolean(configSection["SSL"]);
                 port = Convert.ToInt32(configSection["port"]);
                 smtp = configSection["smtp"] ?? null;
@@ -58,16 +56,15 @@ namespace SLPMailSender
             }
             catch (Exception e)
             {
-                _logger.Error(e, "Error creating the configuration of the mailing service");
+                logger.Error(e, "Error creating the configuration of the mailing service");
             }
             return bResult;
         }
-
         public async Task SendMailAsync(int regionID, string regionName, List<MailingAddress> mailingAddresses, string[] listAtached)
         {
             try
             {
-                _logger.Info("Asynchronous mailing of reports started");
+                logger.Info("Asynchronous mailing of reports started");
 
                 using var emailMessage = new MimeMessage();
 
@@ -119,17 +116,17 @@ namespace SLPMailSender
                 {
                     client.Connect(this.smtp, this.port, this.useSSL);
                     client.Authenticate(this.fromMail, this.pwd);
-                    
-                    string sServerResponse =  client.Send(emailMessage);
 
-                    _logger.Info(sServerResponse);
+                    string sServerResponse = client.Send(emailMessage);
+
+                    logger.Info(sServerResponse);
 
                     client.Disconnect(true);
                 }
             }
             catch (Exception ex)
             {
-                NLog.LogManager.GetLogger(regionName).Error(ex);
+                logger.Error(ex);
             }
 
         }

@@ -1,28 +1,23 @@
-﻿using MimeKit;
-using Org.BouncyCastle.Tls.Crypto;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using NLog;
+using SLPDBLibrary.Models;
 
 namespace SLPDBLibrary
 {
     public static class Controler
     {
-        public static List<tbRegions> GetRegion()
+        private static Logger logger = LogManager.GetLogger("logger");
+        public static List<TbRegion> GetRegion()
         {
-            List<tbRegions> listRegion = new List<tbRegions>();
+            List<TbRegion> listRegion = new List<TbRegion>();
             try
             {
-                using (DatabaseContext db = new DatabaseContext())
+                using (EboDbContext db = new EboDbContext())
                 {
-                    var queryRegion = from regions in db.tbRegions select regions;
-                    listRegion = queryRegion.ToList<tbRegions>();
+                    var queryRegion = from regions in db.TbRegions select regions;
+                    listRegion = queryRegion.ToList<TbRegion>();
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return null;
             }
@@ -32,39 +27,62 @@ namespace SLPDBLibrary
         {
             List<BranchInformation> branches = new List<BranchInformation>();
 
-            using (DatabaseContext db = new DatabaseContext())
+            using (EboDbContext db = new EboDbContext())
             {
-                var queryResult = (from branche in db.tbBranch
-                                   join city in db.tbCities on branche.CityID equals city.ID
-                                   join region in db.tbRegions on branche.RegionID equals region.ID
-                                   where branche.RegionID == regionId
-                                   orderby branche.ID
+                var queryResult = (from branche in db.TbBranches
+                                   join city in db.TbCities on branche.CityId equals city.Id
+                                   join region in db.TbRegions on branche.RegionId equals region.Id
+                                   where branche.RegionId == regionId
+                                   orderby branche.Id
                                    select new
                                    {
-                                       id = branche.ID,
+                                       id = branche.Id,
                                        Region = region.Name,
                                        City = city.Name,
                                        Address = branche.Address,
-                                       MeterCount = (from meter in db.tbMeters where meter.BranchId == branche.ID select meter).Count()
+                                       ServerName = branche.ServerName,
+                                       Meters = (from meters in db.TbMeters where meters.BranchId == branche.Id select meters).ToList<TbMeter>()
 
-                                   });;
+                                   });
 
                 foreach (var item in queryResult)
                 {
-                    branches.Add(new BranchInformation { id = item.id, Region = item.Region, City = item.City, Address = item.Address, meterCount = item.MeterCount });
+                    BranchInformation branchInformation = new BranchInformation();
+
+                    branchInformation.id = item.id;
+                    branchInformation.Region = item.Region;
+                    branchInformation.City = item.City;
+                    branchInformation.Address = item.Address;
+                    branchInformation.ServerName = item.ServerName;
+                    branchInformation.meterCount = item.Meters.Count();
+
+                    foreach (TbMeter meter in item.Meters)
+                    {
+                        branchInformation.Meters.Add(
+                            new Meter
+                            {
+                                Legend = meter.Legend,
+                                MarkingPosition = meter.MarkingPosition,
+                                Model = meter.Model,
+                                SerialNumber = meter.SerialNumber,
+                                Vendor = meter.Vendor
+                            });
+                    }
+
+                    branches.Add(branchInformation);
                 }
 
             }
 
             return branches;
         }
-        public static List<tbMeters> GetMeterByBranchId(int branchID)
+        public static List<TbMeter> GetMeterByBranchId(int branchID)
         {
-            List<tbMeters> result = new List<tbMeters>();
+            List<TbMeter> result = new List<TbMeter>();
 
-            using (DatabaseContext db = new DatabaseContext())
+            using (EboDbContext db = new EboDbContext())
             {
-                var queryResult = (from meters in db.tbMeters
+                var queryResult = (from meters in db.TbMeters
                                    where meters.BranchId == branchID
                                    select meters);
                 result = queryResult.ToList();
@@ -75,18 +93,21 @@ namespace SLPDBLibrary
         {
             List<MailingAddress> lMailingList = new List<MailingAddress>();
 
-            try {
-                using(DatabaseContext db = new DatabaseContext()) {
-                    
-                    var query = (from employee in db.tbEmployees 
-                                where employee.Mailing == regionId ||
-                                employee.Mailing == 0 
+            try
+            {
+                using (EboDbContext db = new EboDbContext())
+                {
+
+                    var query = (from employee in db.TbEmployees
+                                 where employee.Mailing == regionId ||
+                                 employee.Mailing == 0
                                  select employee).ToList();
 
-                    foreach(var employee in query) 
+                    foreach (var employee in query)
                     {
 
-                        MailingAddress mailAddress = new() { Name = String.Concat(employee.FirstName, " ", employee.LastName), Mail = employee.Email};
+
+                        MailingAddress mailAddress = new() { Name = String.Concat(employee.FirstName, " ", employee.LastName), Mail = employee.Email };
                         lMailingList.Add(mailAddress);
                     }
 
@@ -98,25 +119,56 @@ namespace SLPDBLibrary
             }
             return lMailingList;
         }
-        public static List<object> GetMeterReport(DateTime timestamp_begin, DateTime timestamp_end)
+        public static bool GetMeterReport(ref BranchInformation branch, DateTime timestamp_begin, DateTime timestamp_end)
         {
-            List<object> list = new List<object>();
+            /*
+             * /emon001-ES/BranchServer/o-cr-gvard1-em1/General/TrendLog/Експорт активної потужності - Загальна
+             */
+            bool bResult = false;
 
             try
             {
-                using (DatabaseContext db = new DatabaseContext())
+                if (branch.Meters.Count <= 0)
                 {
-                    var query = (from item in db.trend_datas
-                                 where item.timestamp > timestamp_begin.AddHours (-1) &&
-                                 item.timestamp < timestamp_begin.AddHours(1)
-                                 select item).ToList();
+                    logger.Warn(String.Concat("Branch ", branch.Address, " does not contain a list of metering units."));
+                    return true;
                 }
+                foreach (var meter in branch.Meters)
+                {
+                    string s_server = branch.ServerName.Replace("{", "").Replace("}", "");
+                    string s_meter = meter.MarkingPosition.Replace("-", "");
+
+                    using (EboDbContext db = new EboDbContext())
+                    {
+                        var query = (from trend in db.TrendMeta
+                                     where trend.Source.Contains(s_server) &&
+                                     trend.Source.Contains(s_meter) &&
+                                     trend.Source.Contains("Загальний") &&
+                                     (trend.Source.Contains("експорт") ||
+                                      trend.Source.Contains("імпорт"))
+                                      orderby trend.Source 
+                                     select new
+                                     {
+                                         source = trend.Source,
+                                         trend_id = trend.Externallogid,
+                                         data = (from data in db.TrendData where (
+                                                 data.Externallogid == trend.Externallogid && 
+                                                 data.Timestamp >= timestamp_begin && 
+                                                 data.Timestamp <= timestamp_end &&
+                                                 data.Timestamp.Minute == 0 ) 
+                                                 select data).ToList()
+                                     }).ToList();
+
+                    }
+                }
+
+                bResult = true;
             }
             catch (Exception ex)
-            { 
-
+            {
+                logger.Error(ex);
             }
-            return list;
+            return bResult;
         }
 
     }
