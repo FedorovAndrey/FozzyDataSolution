@@ -146,18 +146,26 @@ namespace SLPDBLibrary
                                      trend.Source.Contains("Загальний") &&
                                      (trend.Source.Contains("експорт") ||
                                       trend.Source.Contains("імпорт"))
-                                      orderby trend.Source 
+                                     orderby trend.Source
                                      select new
                                      {
                                          source = trend.Source,
                                          trend_id = trend.Externallogid,
-                                         data = (from data in db.TrendData where (
-                                                 data.Externallogid == trend.Externallogid && 
-                                                 data.Timestamp >= timestamp_begin && 
-                                                 data.Timestamp <= timestamp_end &&
-                                                 data.Timestamp.Minute == 0 ) 
-                                                 select data).ToList()
-                                     }).ToList();
+                                         values = (from data in db.TrendData
+                                                 where (
+                                                 data.Externallogid == trend.Externallogid &&
+                                                 data.Timestamp >= timestamp_begin.AddHours(-1) &&
+                                                 data.Timestamp <= timestamp_end.AddHours(1) &&
+                                                 data.Timestamp.Minute == 0)
+                                                 select data).ToArray()
+                                     });
+
+                        foreach (var item in query)
+                        {
+                            meter._data.Add(new MeterData { 
+                            Source = item.source, SourceId = item.trend_id, values = item.values});
+                        }
+                        
 
                     }
                 }
