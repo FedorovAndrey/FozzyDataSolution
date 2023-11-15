@@ -76,8 +76,13 @@ public partial class EboDbContext : DbContext
     public virtual DbSet<Versioninfo> Versioninfos { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseNpgsql("Host=sfpv-pgdb015;Port=5432;Database=ebo_db;Username=ebo_user;Password=too8er4vohn8Zooc");
+    {
+        optionsBuilder.UseNpgsql("Host=sfpv-pgdb015;Port=5432;Database=ebo_db;Username=ebo_user;Password=too8er4vohn8Zooc");
+
+  
+    }
+
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -154,8 +154,9 @@ namespace SLPDBLibrary
                                          values = (from data in db.TrendData
                                                  where (
                                                  data.Externallogid == trend.Externallogid &&
-                                                 data.Timestamp >= timestamp_begin.AddHours(-1) &&
-                                                 data.Timestamp <= timestamp_end.AddHours(1) &&
+                                                 //data.Timestamp >= timestamp_begin.AddHours(-1) &&
+                                                 data.Timestamp >= timestamp_begin &&
+                                                 data.Timestamp <= timestamp_end &&
                                                  data.Timestamp.Minute == 0)
                                                  select data).ToArray()
                                      });
