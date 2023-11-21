@@ -84,8 +84,13 @@ namespace SLPDBLibrary
             {
                 var queryResult = (from meters in db.TbMeters
                                    where meters.BranchId == branchID
+                                   orderby meters.MarkingPosition 
                                    select meters);
                 result = queryResult.ToList();
+                if (result.Count > 0 && result[0].MarkingPosition != "WH-01")
+                {
+                    
+                }
             }
             return result;
         }
@@ -133,6 +138,7 @@ namespace SLPDBLibrary
                     logger.Warn(String.Concat("Branch ", branch.Address, " does not contain a list of metering units."));
                     return true;
                 }
+
                 foreach (var meter in branch.Meters)
                 {
                     string s_server = branch.ServerName.Replace("{", "").Replace("}", "");
@@ -159,10 +165,12 @@ namespace SLPDBLibrary
                                                  data.Timestamp <= timestamp_end &&
                                                  data.Timestamp.Minute == 0)
                                                  select data).ToArray()
-                                     });
+                                     }).ToList();
 
                         foreach (var item in query)
                         {
+                            MeterData m_Data = new MeterData();
+                            m_Data.Source = item.source;
                             meter._data.Add(new MeterData { 
                             Source = item.source, SourceId = item.trend_id, values = item.values});
                         }

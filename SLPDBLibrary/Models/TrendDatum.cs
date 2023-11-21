@@ -54,7 +54,8 @@ public partial class TrendDatum
 
     public string? Username { get; set; }
 
-    public double? Value { get; set; }
+    //public double? Value { get; set; }
+    public double Value { get; set; }
 
     public virtual TrendMetum Externallog { get; set; } = null!;
 }

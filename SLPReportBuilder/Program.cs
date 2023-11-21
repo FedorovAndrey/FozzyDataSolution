@@ -22,21 +22,32 @@ try
 
     var regions = Controler.GetRegion();
 
-    WorkWithExcel regionReport = new WorkWithExcel(1, "Центр", reportFolder);
-    Thread regionThread = new Thread(regionReport.Generate);
-    regionThread.Start();
+    //WorkWithExcel regionReport = new WorkWithExcel(1, "Центр", reportFolder);
+    //Thread regionThread = new Thread(regionReport.Generate);
+    //regionThread.Start();
 
-    //if (regions != null)
-    //{
-    //    foreach (var region in regions)
-    //    {
-    //        logger.LogInformation("A report generation thread is created : " + region.Name);
-    //        WorkWithExcel regionReport = new WorkWithExcel(region.ID, region.Name, reportFolder);
-    //        Thread regionThread = new Thread(regionReport.Generate);
-    //        regionThread.Start();
+    if (regions != null)
+    {
+        foreach (var region in regions)
+        {
+            logger.LogInformation("A report generation thread is created : " + region.Name);
+            WorkWithExcel regionReport = new WorkWithExcel(region.Id, region.Name, reportFolder);
+            Thread regionThread = new Thread(regionReport.Generate);
+            regionThread.Start();
 
-    //    }
-    //}
+        }
+
+        foreach (var region in regions)
+        {
+            logger.LogInformation("Creating a flow for generating a report on water consumption by a branch :  : " + region.Name);
+            WorkWithExcel regionWaterReport = new WorkWithExcel(region.Id, region.Name, reportFolder);
+            Thread regionWaterThread = new Thread(regionWaterReport.Generate);
+            regionWaterThread.Start();
+
+        }
+    }
+
+
 
     logger.LogInformation("All threads are complete");
 
