@@ -41,7 +41,16 @@ namespace SLPDBLibrary
                                        City = city.Name,
                                        Address = branche.Address,
                                        ServerName = branche.ServerName,
-                                       Meters = (from meters in db.TbMeters where meters.BranchId == branche.Id select meters).ToList<TbMeter>()
+                                       EnergyMeters = (from meters in db.TbMeters where 
+                                                       meters.BranchId == branche.Id &&
+                                                       meters.TypeId == 2
+                                                       select meters).ToList<TbMeter>(),
+                                       WaterMeters = (from meters in db.TbMeters
+                                                      where
+                                                       meters.BranchId == branche.Id &&
+                                                       meters.TypeId == 3
+                                                      select meters).ToList<TbMeter>()
+
 
                                    });
 
@@ -54,11 +63,23 @@ namespace SLPDBLibrary
                     branchInformation.City = item.City;
                     branchInformation.Address = item.Address;
                     branchInformation.ServerName = item.ServerName;
-                    branchInformation.meterCount = item.Meters.Count();
+                    
 
-                    foreach (TbMeter meter in item.Meters)
+                    foreach (TbMeter meter in item.EnergyMeters)
                     {
-                        branchInformation.Meters.Add(
+                        branchInformation.EnergyMeters.Add(
+                            new Meter
+                            {
+                                Legend = meter.Legend,
+                                MarkingPosition = meter.MarkingPosition,
+                                Model = meter.Model,
+                                SerialNumber = meter.SerialNumber,
+                                Vendor = meter.Vendor
+                            });
+                    }
+                    foreach(TbMeter meter in item.WaterMeters)
+                    {
+                        branchInformation.WaterMeters.Add(
                             new Meter
                             {
                                 Legend = meter.Legend,
@@ -126,65 +147,65 @@ namespace SLPDBLibrary
         }
         public static bool GetMeterReport(ref BranchInformation branch, DateTime timestamp_begin, DateTime timestamp_end)
         {
-            /*
-             * /emon001-ES/BranchServer/o-cr-gvard1-em1/General/TrendLog/Експорт активної потужності - Загальна
-             */
+            ///*
+            // * /emon001-ES/BranchServer/o-cr-gvard1-em1/General/TrendLog/Експорт активної потужності - Загальна
+            // */
             bool bResult = false;
 
-            try
-            {
-                if (branch.Meters.Count <= 0)
-                {
-                    logger.Warn(String.Concat("Branch ", branch.Address, " does not contain a list of metering units."));
-                    return true;
-                }
+            //try
+            //{
+            //    if (branch.Meters.Count <= 0)
+            //    {
+            //        logger.Warn(String.Concat("Branch ", branch.Address, " does not contain a list of metering units."));
+            //        return true;
+            //    }
 
-                foreach (var meter in branch.Meters)
-                {
-                    string s_server = branch.ServerName.Replace("{", "").Replace("}", "");
-                    string s_meter = meter.MarkingPosition.Replace("-", "");
+            //    foreach (var meter in branch.Meters)
+            //    {
+            //        string s_server = branch.ServerName.Replace("{", "").Replace("}", "");
+            //        string s_meter = meter.MarkingPosition.Replace("-", "");
 
-                    using (EboDbContext db = new EboDbContext())
-                    {
-                        var query = (from trend in db.TrendMeta
-                                     where trend.Source.Contains(s_server) &&
-                                     trend.Source.Contains(s_meter) &&
-                                     trend.Source.Contains("Загальний") &&
-                                     (trend.Source.Contains("експорт") ||
-                                      trend.Source.Contains("імпорт"))
-                                     orderby trend.Source
-                                     select new
-                                     {
-                                         source = trend.Source,
-                                         trend_id = trend.Externallogid,
-                                         values = (from data in db.TrendData
-                                                 where (
-                                                 data.Externallogid == trend.Externallogid &&
-                                                 //data.Timestamp >= timestamp_begin.AddHours(-1) &&
-                                                 data.Timestamp >= timestamp_begin &&
-                                                 data.Timestamp <= timestamp_end &&
-                                                 data.Timestamp.Minute == 0)
-                                                 select data).ToArray()
-                                     }).ToList();
+            //        using (EboDbContext db = new EboDbContext())
+            //        {
+            //            var query = (from trend in db.TrendMeta
+            //                         where trend.Source.Contains(s_server) &&
+            //                         trend.Source.Contains(s_meter) &&
+            //                         trend.Source.Contains("Загальний") &&
+            //                         (trend.Source.Contains("експорт") ||
+            //                          trend.Source.Contains("імпорт"))
+            //                         orderby trend.Source
+            //                         select new
+            //                         {
+            //                             source = trend.Source,
+            //                             trend_id = trend.Externallogid,
+            //                             values = (from data in db.TrendData
+            //                                     where (
+            //                                     data.Externallogid == trend.Externallogid &&
+            //                                     //data.Timestamp >= timestamp_begin.AddHours(-1) &&
+            //                                     data.Timestamp >= timestamp_begin &&
+            //                                     data.Timestamp <= timestamp_end &&
+            //                                     data.Timestamp.Minute == 0)
+            //                                     select data).ToArray()
+            //                         }).ToList();
 
-                        foreach (var item in query)
-                        {
-                            MeterData m_Data = new MeterData();
-                            m_Data.Source = item.source;
-                            meter._data.Add(new MeterData { 
-                            Source = item.source, SourceId = item.trend_id, values = item.values});
-                        }
+            //            foreach (var item in query)
+            //            {
+            //                MeterData m_Data = new MeterData();
+            //                m_Data.Source = item.source;
+            //                meter._data.Add(new MeterData { 
+            //                Source = item.source, SourceId = item.trend_id, values = item.values});
+            //            }
                         
 
-                    }
-                }
+            //        }
+            //    }
 
-                bResult = true;
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex);
-            }
+            //    bResult = true;
+            //}
+            //catch (Exception ex)
+            //{
+            //    logger.Error(ex);
+            //}
             return bResult;
         }
 

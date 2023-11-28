@@ -6,7 +6,8 @@
 
         public BranchInformation()
         {
-            this.Meters = new List<Meter>();
+            this.EnergyMeters = new List<Meter>();
+            this.WaterMeters = new List<Meter>();
         }
 
         public int id { get; set; }
@@ -14,7 +15,8 @@
         public string? City { get; set; }
         public string? Address { get; set; }
         public string? ServerName { get; set; }
-        public List<Meter> Meters { get; set; }
+        public List<Meter> EnergyMeters { get; set; }
+        public List<Meter> WaterMeters { get; set; }
         public int meterCount { get; set; }
 
         protected virtual void Dispose(bool disposing)

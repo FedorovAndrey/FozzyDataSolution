@@ -9,4 +9,11 @@
         Year = 4
     }
 
+    public enum EnergyResource
+    {
+        Energy = 1,
+        Water = 2
+
+    }
+
 }
