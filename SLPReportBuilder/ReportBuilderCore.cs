@@ -1,15 +1,9 @@
-﻿using System.Drawing;
+﻿using Microsoft.Extensions.Logging;
+using NLog;
 using SLPDBLibrary;
 using SLPDBLibrary.Models;
 using SLPHelper;
-using Microsoft.Extensions.Logging;
-using NLog.Extensions.Logging;
-using NLog;
 using SLPReportCreater;
-using OfficeOpenXml;
-using System.Collections.Generic;
-using OfficeOpenXml.Table.PivotTable;
-using System.Text;
 
 namespace SLPReportBuilder
 {
@@ -20,48 +14,65 @@ namespace SLPReportBuilder
 
         private static int regionId;
         private static string regionName;
-        private static string reportFolderName;
-       
-        
+        private static string _rootFolderName;
+        private static string _reportFolderByRegion;
 
         public static void GenerateReport(string path)
         {
-            reportFolderName = path;
+            _rootFolderName = path;
             try
             {
-
                 logger.Info("Get region list from database");
+
                 var regions = Controler.GetRegion();
 
                 if (regions != null)
                 {
                     foreach (var item in regions)
                     {
+                        #region Creating folders for reports by region
+                        if (!Helper.CreateFolderReportByRegions(_rootFolderName, item.Name))
+                        { 
+                        }
+                        
+                        #endregion
+                        
                         logger.Info("An entry has been added to the list of regions: " + item.Name);
-                        SLPDBLibrary.Region region = new SLPDBLibrary.Region(item.Id,item.Name);
+                        _regions.Add(new SLPDBLibrary.Region(item.Id, item.Name));
+                    }
+                }
 
-                        logger.Info("Creating a list of branches for a region  : " + reportFolderName);
-                        var branchList = Controler.GetBranchesInformation(item.Id);
+                foreach (var region in _regions)
+                {
+                    logger.Info("Creating a list of branches for a region  : " + region.Name);
+
+                    var branchList = Controler.GetBranchesInformation(region.ID);
+
+                    if (branchList != null)
+                    {
+                        logger.Info(String.Concat("The regional ", region.Name, " includes ", branchList.Count.ToString(), " branches"));
+
                         foreach (var branch in branchList)
                         {
                             region.AddBranch(branch);
                         }
-
-                        _regions.Add(region);
-
                     }
+                    else { logger.Info(String.Concat("Region ", region.Name, "does not contain any branches")); }
+
                 }
 
-
+                _reportFolderByRegion = Path.Combine(_rootFolderName, _regions[0].Name);
                 logger.Info("Create a thread for generating a power consumption report" + _regions[0].Name);
-                Thread energyReportBuilder = new Thread(() => {
-                    GenerateEnergyReport(_regions[0], reportFolderName);
+                Thread energyReportBuilder = new Thread(() =>
+                {
+                    GenerateEnergyReport(_regions[0], _reportFolderByRegion);
                 });
-                
+
 
                 logger.Info("Create a thread for generating a water consumption report" + _regions[0].Name);
-                Thread waterReportBuilder = new Thread(() => {
-                    GenerateWaterReport(_regions[0], reportFolderName);
+                Thread waterReportBuilder = new Thread(() =>
+                {
+                    GenerateWaterReport(_regions[0], _reportFolderByRegion);
                 });
 
                 energyReportBuilder.Start();
@@ -111,107 +122,123 @@ namespace SLPReportBuilder
          */
         private static void GenerateEnergyReport(SLPDBLibrary.Region region, string path)
         {
+
             logger.Info("Run of energy consumption report generation flow - " + region.Name);
+
             string filename = "";
             try
             {
                 #region Create daily report
 
-                filename = Helper.GetFileName(region.Name, ReportType.Day.ToString(), path, EnergyResource.Energy.ToString());
+                region.TimestampBegin = DateTime.Today.AddDays(-1);
+                region.TimestampEnd   = DateTime.Today;
 
-                WorkWithExcel dailyReportWorkbook = new WorkWithExcel(region.ID, region.Name, filename);
-
-                if (!dailyReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Energy))
-                {
-
-                }
 
                 foreach (var branch in region.Branches)
                 {
-                    #region 
-                    if (!dailyReportWorkbook.GenerateReportTemplateEnergy(branch, ReportType.Day))
-                    {
-                    }
+                    logger.Info(String.Concat("Obtaining data on daily electricity consumption for a branch office: ", branch.Address));
 
-                    #endregion
+                    List<Meter> meters = branch.EnergyMeters;
+
+                    if (!Controler.GetMeterData(ref meters, branch.ServerName, ReportType.Day, EnergyResource.Energy, region.TimestampBegin, region.TimestampEnd))
+                    {
+                        logger.Warn(String.Concat(branch.Address, " - The method of obtaining data on daily electricity consumption failed!"));
+                    }
                 }
+
+                logger.Info(String.Concat("Creating a report file for a region: ", region.Name));
+
+                filename = Path.Combine(path,  Helper.GetFileName(region.Name, ReportType.Day.ToString(), path, EnergyResource.Energy.ToString()));
+                WorkWithExcel dailyReportWorkbook = new WorkWithExcel(filename, ReportType.Day, EnergyResource.Energy, region);
+
+                dailyReportWorkbook.Generate();
                 dailyReportWorkbook.Save();
 
                 #endregion
 
+
                 #region Create Weekly report
 
-                if(DateTime.Today.DayOfWeek == DayOfWeek.Monday) 
-                {
-                    filename = Helper.GetFileName(region.Name, ReportType.Week.ToString(), path, EnergyResource.Energy.ToString());
+                //if (DateTime.Today.DayOfWeek == DayOfWeek.Monday)
+                //{
+                //    timestamp_begin = DateTime.Today.AddDays(-7).AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
+                //    timestamp_end = DateTime.Today.AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
 
-                    WorkWithExcel weeklyReportWorkbook = new WorkWithExcel(region.ID, region.Name, filename);
+                //    filename = Helper.GetFileName(region.Name, ReportType.Week.ToString(), path, EnergyResource.Energy.ToString());
 
-                    if (!weeklyReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Energy))
-                    {
+                //    WorkWithExcel weeklyReportWorkbook = new WorkWithExcel(filename);
 
-                    }
+                //    if (!weeklyReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Energy))
+                //    {
 
-                    foreach (var branch in region.Branches)
-                    {
-                        #region 
-                        if (!weeklyReportWorkbook.GenerateReportTemplateEnergy(branch, ReportType.Week))
-                        {
-                        }
-                        #endregion
-                    }
-                    weeklyReportWorkbook.Save();
-                }
+                //    }
+
+                //    foreach (var branch in region.Branches)
+                //    {
+                //        #region 
+                //        if (!weeklyReportWorkbook.GenerateReportTemplateEnergy(branch, ReportType.Week))
+                //        {
+                //        }
+                //        #endregion
+                //    }
+                //    weeklyReportWorkbook.Save();
+                //}
                 #endregion
 
                 #region Create Monthly report
 
-                if (DateTime.Today.Day == 1)
-                {
-                    filename = Helper.GetFileName(region.Name, ReportType.Month.ToString(), path, EnergyResource.Energy.ToString());
+                //if (DateTime.Today.Day == 1)
+                //{
+                //timestamp_begin = new DateTime(DateTime.Today.Year, DateTime.Today.AddMonths(-1).Month, 1);
+                //timestamp_end = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
 
-                    WorkWithExcel monthlyReportWorkbook = new WorkWithExcel(region.ID, region.Name, filename);
+                //    filename = Helper.GetFileName(region.Name, ReportType.Month.ToString(), path, EnergyResource.Energy.ToString());
 
-                    if (!monthlyReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Energy))
-                    {
+                //    WorkWithExcel monthlyReportWorkbook = new WorkWithExcel(filename);
 
-                    }
+                //    if (!monthlyReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Energy))
+                //    {
 
-                    foreach (var branch in region.Branches)
-                    {
-                        #region 
-                        if (!monthlyReportWorkbook.GenerateReportTemplateEnergy(branch, ReportType.Month))
-                        {
-                        }
-                        #endregion
-                    }
-                    monthlyReportWorkbook.Save();
-                }
+                //    }
+
+                //    foreach (var branch in region.Branches)
+                //    {
+                //        #region 
+                //        if (!monthlyReportWorkbook.GenerateReportTemplateEnergy(branch, ReportType.Month))
+                //        {
+                //        }
+                //        #endregion
+                //    }
+                //    monthlyReportWorkbook.Save();
+                //}
                 #endregion
 
                 #region Create Early report
 
-                if (DateTime.Today.Day == 1 && DateTime.Today.Month == 1)
-                {
-                    filename = Helper.GetFileName(region.Name, ReportType.Year.ToString(), path, EnergyResource.Energy.ToString());
+                //if (DateTime.Today.Day == 1 && DateTime.Today.Month == 1)
+                //{
+                //timestamp_begin = new DateTime(DateTime.Today.AddYears(-1).Year, 1, 1);
+                //timestamp_end = new DateTime(DateTime.Today.Year, 1, 1);
 
-                    WorkWithExcel YearReportWorkbook = new WorkWithExcel(region.ID, region.Name, filename);
+                //    filename = Helper.GetFileName(region.Name, ReportType.Year.ToString(), path, EnergyResource.Energy.ToString());
 
-                    if (!YearReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Energy))
-                    {
+                //    WorkWithExcel YearReportWorkbook = new WorkWithExcel(filename);
 
-                    }
+                //    if (!YearReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Energy))
+                //    {
 
-                    foreach (var branch in region.Branches)
-                    {
-                        #region 
-                        if (!YearReportWorkbook.GenerateReportTemplateEnergy(branch, ReportType.Month))
-                        {
-                        }
-                        #endregion
-                    }
-                    YearReportWorkbook.Save();
-                }
+                //    }
+
+                //    foreach (var branch in region.Branches)
+                //    {
+                //        #region 
+                //        if (!YearReportWorkbook.GenerateReportTemplateEnergy(branch, ReportType.Month))
+                //        {
+                //        }
+                //        #endregion
+                //    }
+                //    YearReportWorkbook.Save();
+                //}
                 #endregion
 
 
@@ -224,109 +251,141 @@ namespace SLPReportBuilder
                 logger.Error(ex.Source);
             }
         }
+
         private static void GenerateWaterReport(SLPDBLibrary.Region region, string path)
         {
+
             logger.Info("Run of water consumption report generation flow - " + region.Name);
+
             string filename = "";
             try
             {
                 #region Create daily report
 
-                filename = Helper.GetFileName(region.Name, ReportType.Day.ToString(), path, EnergyResource.Water.ToString());
+                region.TimestampBegin = DateTime.Today.AddDays(-1);
+                region.TimestampEnd = DateTime.Today;
 
-                WorkWithExcel dailyReportWorkbook = new WorkWithExcel(region.ID, region.Name, filename);
 
-                if (!dailyReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Water))
+                for (int i = 0; i < 2; i++)
                 {
+                    logger.Info(String.Concat("Obtaining data on daily water consumption for a branch office: ", region.Branches[i].Address));
 
-                }
+                    List<Meter> meters = region.Branches[i].WaterMeters;
 
-                foreach (var branch in region.Branches)
-                {
-                    #region 
-                    if (!dailyReportWorkbook.GenerateReportTemplateWater(branch, ReportType.Day))
+                    if (!Controler.GetMeterData(ref meters, region.Branches[i].ServerName, ReportType.Day, EnergyResource.Water, region.TimestampBegin, region.TimestampEnd))
                     {
+                        logger.Warn(String.Concat(region.Branches[i].Address, " - The method of obtaining data on daily electricity consumption failed!"));
                     }
-
-                    #endregion
                 }
+
+                //foreach (var branch in region.Branches)
+                //{
+                //    logger.Info(String.Concat("Obtaining data on daily electricity consumption for a branch office: ", branch.Address));
+
+                //    List<Meter> meters = branch.EnergyMeters;
+
+                //    if (!Controler.GetMeterData(ref meters, branch.ServerName, ReportType.Day, EnergyResource.Energy))
+                //    {
+                //        logger.Warn(String.Concat(branch.Address, " - The method of obtaining data on daily electricity consumption failed!"));
+                //    }
+                //}
+
+                logger.Info(String.Concat("Creating a report file for a region: ", region.Name));
+
+
+                filename = Path.Combine(path, Helper.GetFileName(region.Name, ReportType.Day.ToString(), path, EnergyResource.Energy.ToString()));
+
+
+                WorkWithExcel dailyReportWorkbook = new WorkWithExcel(filename, ReportType.Day, EnergyResource.Energy, region);
+
+                dailyReportWorkbook.Generate();
                 dailyReportWorkbook.Save();
 
                 #endregion
 
+
                 #region Create Weekly report
 
-                if (DateTime.Today.DayOfWeek == DayOfWeek.Monday)
-                {
-                    filename = Helper.GetFileName(region.Name, ReportType.Week.ToString(), path, EnergyResource.Water.ToString());
+                //if (DateTime.Today.DayOfWeek == DayOfWeek.Monday)
+                //{
+                //    timestamp_begin = DateTime.Today.AddDays(-7).AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
+                //    timestamp_end = DateTime.Today.AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
 
-                    WorkWithExcel weeklyReportWorkbook = new WorkWithExcel(region.ID, region.Name, filename);
+                //    filename = Helper.GetFileName(region.Name, ReportType.Week.ToString(), path, EnergyResource.Energy.ToString());
 
-                    if (!weeklyReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Water))
-                    {
+                //    WorkWithExcel weeklyReportWorkbook = new WorkWithExcel(filename);
 
-                    }
+                //    if (!weeklyReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Energy))
+                //    {
 
-                    foreach (var branch in region.Branches)
-                    {
-                        #region 
-                        if (!weeklyReportWorkbook.GenerateReportTemplateEnergy(branch, ReportType.Week))
-                        {
-                        }
-                        #endregion
-                    }
-                    weeklyReportWorkbook.Save();
-                }
+                //    }
+
+                //    foreach (var branch in region.Branches)
+                //    {
+                //        #region 
+                //        if (!weeklyReportWorkbook.GenerateReportTemplateEnergy(branch, ReportType.Week))
+                //        {
+                //        }
+                //        #endregion
+                //    }
+                //    weeklyReportWorkbook.Save();
+                //}
                 #endregion
 
                 #region Create Monthly report
 
-                if (DateTime.Today.Day == 1)
-                {
-                    filename = Helper.GetFileName(region.Name, ReportType.Month.ToString(), path, EnergyResource.Water.ToString());
+                //if (DateTime.Today.Day == 1)
+                //{
+                //timestamp_begin = new DateTime(DateTime.Today.Year, DateTime.Today.AddMonths(-1).Month, 1);
+                //timestamp_end = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
 
-                    WorkWithExcel monthlyReportWorkbook = new WorkWithExcel(region.ID, region.Name, filename);
+                //    filename = Helper.GetFileName(region.Name, ReportType.Month.ToString(), path, EnergyResource.Energy.ToString());
 
-                    if (!monthlyReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Water))
-                    {
+                //    WorkWithExcel monthlyReportWorkbook = new WorkWithExcel(filename);
 
-                    }
+                //    if (!monthlyReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Energy))
+                //    {
 
-                    foreach (var branch in region.Branches)
-                    {
-                        #region 
-                        if (!monthlyReportWorkbook.GenerateReportTemplateEnergy(branch, ReportType.Month))
-                        {
-                        }
-                        #endregion
-                    }
-                    monthlyReportWorkbook.Save();
-                }
+                //    }
+
+                //    foreach (var branch in region.Branches)
+                //    {
+                //        #region 
+                //        if (!monthlyReportWorkbook.GenerateReportTemplateEnergy(branch, ReportType.Month))
+                //        {
+                //        }
+                //        #endregion
+                //    }
+                //    monthlyReportWorkbook.Save();
+                //}
                 #endregion
 
                 #region Create Early report
 
-                if (DateTime.Today.Day == 1 && DateTime.Today.Month == 1)
-                {
-                    filename = Helper.GetFileName(region.Name, ReportType.Year.ToString(), path, EnergyResource.Water.ToString());
+                //if (DateTime.Today.Day == 1 && DateTime.Today.Month == 1)
+                //{
+                //timestamp_begin = new DateTime(DateTime.Today.AddYears(-1).Year, 1, 1);
+                //timestamp_end = new DateTime(DateTime.Today.Year, 1, 1);
 
-                    WorkWithExcel YearReportWorkbook = new WorkWithExcel(region.ID, region.Name, filename);
+                //    filename = Helper.GetFileName(region.Name, ReportType.Year.ToString(), path, EnergyResource.Energy.ToString());
 
-                    if (!YearReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Water))
-                    {
+                //    WorkWithExcel YearReportWorkbook = new WorkWithExcel(filename);
 
-                    }
+                //    if (!YearReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Energy))
+                //    {
 
-                    foreach (var branch in region.Branches)
-                    {
-                        #region 
-                        if (!YearReportWorkbook.GenerateReportTemplateWater(branch, ReportType.Month))
-                        {
-                        }
-                        #endregion
-                    }
-                    YearReportWorkbook.Save();
-                }
+                //    }
+
+                //    foreach (var branch in region.Branches)
+                //    {
+                //        #region 
+                //        if (!YearReportWorkbook.GenerateReportTemplateEnergy(branch, ReportType.Month))
+                //        {
+                //        }
+                //        #endregion
+                //    }
+                //    YearReportWorkbook.Save();
+                //}
                 #endregion
 
 
@@ -340,7 +399,6 @@ namespace SLPReportBuilder
             }
         }
 
-        
 
 
     }

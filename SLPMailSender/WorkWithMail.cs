@@ -126,7 +126,8 @@ namespace SLPMailSender
             }
             catch (Exception ex)
             {
-                logger.Error(ex);
+                logger.Error(ex.Message);
+                logger.Error(ex.Source); logger.Error(ex.StackTrace);
             }
 
         }

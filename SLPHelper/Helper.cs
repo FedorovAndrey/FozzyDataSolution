@@ -1,5 +1,6 @@
 ﻿using System.Text;
 
+
 namespace SLPHelper
 {
     public static class Helper
@@ -10,8 +11,7 @@ namespace SLPHelper
 
             try
             {
-                StringBuilder stringBuilder = new StringBuilder(reportFolderName + @"\");
-                stringBuilder.Append(regionName + @"\");
+                StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.Append(DateTime.Now.ToString().Replace(".", "-").Replace(":", "-"));
                 stringBuilder.Append("_" + source);
                 stringBuilder.Append("_" + regionName);
@@ -20,8 +20,9 @@ namespace SLPHelper
 
                 sResult = stringBuilder.ToString();
             }
-            catch (Exception e)
+            catch 
             {
+                
                 sResult = String.Empty;
             }
 
@@ -35,6 +36,7 @@ namespace SLPHelper
 
             try
             {
+
                 string folderName = String.Concat(reportFolder, @"\", regionName);
 
                 if (!Directory.Exists(folderName))
@@ -43,7 +45,7 @@ namespace SLPHelper
                 }
                 sResult = folderName;
             }
-            catch (Exception e)
+            catch
             {
             }
             return sResult;
@@ -66,7 +68,7 @@ namespace SLPHelper
                 }
                 bResult = true;
             }
-            catch (Exception e)
+            catch 
             {
 
             }
@@ -93,9 +95,36 @@ namespace SLPHelper
             }
             s_formula.Append(')');
 
-            sResult = s_formula.ToString(); 
+            sResult = s_formula.ToString();
             return sResult;
 
+        }
+        public static bool CreateFolderReportByRegions(string RootReportFolder, string regionName)
+        {
+            bool bResult = false;
+            string s_path = "";
+
+            try
+            {
+                s_path = Path.Combine(RootReportFolder, regionName);
+
+                if (!Directory.Exists(s_path))
+                {
+                    Directory.CreateDirectory(s_path);
+
+                }
+
+            }
+            catch (Exception ex)
+            { 
+            }
+
+            return bResult;
+        }
+        public static string CreateFullFileName(string path, string fileName)
+        {
+            string s_path = Path.Combine(path, fileName);   
+            return s_path;
         }
 
     }

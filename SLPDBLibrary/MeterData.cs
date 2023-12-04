@@ -1,22 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SLPDBLibrary.Models;
+﻿using SLPDBLibrary.Models;
 
 namespace SLPDBLibrary
 {
     public class MeterData : IDisposable
     {
         private List<TrendValue> _values = new List<TrendValue>();
-        public MeterData() { 
+        public MeterData()
+        {
 
-            
+
         }
         public string? Source { get; set; }
         public int SourceId { get; set; }
-        public TrendDatum[]? values {get;set; }
+        public TrendDatum[]? values { get; set; }
         public List<TrendValue> Values { get => _values; set => _values = value; }
 
         public void Dispose()

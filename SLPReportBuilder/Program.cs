@@ -1,9 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
-using SLPDBLibrary;
 using SLPReportBuilder;
-using SLPReportCreater;
 
 var logger = LoggerFactory.Create(builder => builder.AddNLog()).CreateLogger<Program>();
 logger.LogInformation("Program has started.");
