@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
+using SLPMailSender;
 using SLPReportBuilder;
 
 var logger = LoggerFactory.Create(builder => builder.AddNLog()).CreateLogger<Program>();
@@ -55,7 +56,7 @@ try
     //using (WorkWithMail mailSender = new WorkWithMail())
     //{
     //    mailSender.GetConfig();
-    //    _ = mailSender.SendMailAsync("interandry@gmail.com", "TEST SENDER SLP REPORTS", "TEST Sender report sender");
+    //    _ = mailSender.SendMailAsync( SendMailAsync("interandry@gmail.com", "TEST SENDER SLP REPORTS", "TEST Sender report sender");
     //}
 }
 catch (Exception ex)

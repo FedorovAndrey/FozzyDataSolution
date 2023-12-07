@@ -99,6 +99,43 @@ namespace SLPHelper
             return sResult;
 
         }
+        public static string GetWaterTotalFormulaRC(int count)
+        {
+            string sResult = "";
+
+            StringBuilder s_formula = new StringBuilder("=(");
+            for (int k = 0; k < count; k++)
+            {
+                int index = 1 + (k * 2);
+                s_formula.Append("RC[");
+                s_formula.Append(index.ToString());
+                s_formula.Append("]");
+
+                if (k < (count - 1))
+                {
+                    s_formula.Append(" + ");
+                }
+
+            }
+            s_formula.Append(')');
+
+            sResult = s_formula.ToString();
+            return sResult;
+
+        }
+
+        public static string GetSumFormulaRC(int count)
+        {
+            StringBuilder s_formula = new StringBuilder("=SUM(R[");
+            s_formula.Append(((-1) * count).ToString());
+            s_formula.Append("]C");
+            s_formula.Append(":");
+            s_formula.Append("R[-1]C)");
+            return s_formula.ToString();
+
+        }
+
+
         public static bool CreateFolderReportByRegions(string RootReportFolder, string regionName)
         {
             bool bResult = false;
@@ -125,6 +162,22 @@ namespace SLPHelper
         {
             string s_path = Path.Combine(path, fileName);   
             return s_path;
+        }
+        public static bool GetAtachedFileName(ref string[] files, string path)
+        {
+            bool bResult = false;
+
+            try
+            {
+                files = Directory.GetFiles(path);
+
+                bResult = true;
+            }
+            catch (Exception ex) { 
+
+            }
+            return bResult;
+
         }
 
     }

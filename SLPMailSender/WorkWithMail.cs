@@ -53,6 +53,8 @@ namespace SLPMailSender
                 smtp = configSection["smtp"] ?? null;
                 fromMail = configSection["From"] ?? null;
                 pwd = configSection["pwd"] ?? null;
+
+                bResult = true;
             }
             catch (Exception e)
             {

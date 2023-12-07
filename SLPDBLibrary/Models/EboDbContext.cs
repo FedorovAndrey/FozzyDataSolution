@@ -82,8 +82,6 @@ public partial class EboDbContext : DbContext
 
     }
 
-
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasPostgresExtension("timescaledb");

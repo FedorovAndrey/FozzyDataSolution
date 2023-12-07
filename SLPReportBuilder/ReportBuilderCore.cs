@@ -1,8 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 using NLog;
+using Org.BouncyCastle.Asn1.Cmp;
 using SLPDBLibrary;
 using SLPDBLibrary.Models;
 using SLPHelper;
+using SLPMailSender;
 using SLPReportCreater;
 
 namespace SLPReportBuilder
@@ -17,7 +20,7 @@ namespace SLPReportBuilder
         private static string _rootFolderName;
         private static string _reportFolderByRegion;
 
-        public static void GenerateReport(string path)
+        public static async void GenerateReport(string path)
         {
             _rootFolderName = path;
             try
@@ -33,6 +36,7 @@ namespace SLPReportBuilder
                         #region Creating folders for reports by region
                         if (!Helper.CreateFolderReportByRegions(_rootFolderName, item.Name))
                         { 
+
                         }
                         
                         #endregion
@@ -62,6 +66,9 @@ namespace SLPReportBuilder
                 }
 
                 _reportFolderByRegion = Path.Combine(_rootFolderName, _regions[0].Name);
+
+
+
                 logger.Info("Create a thread for generating a power consumption report" + _regions[0].Name);
                 Thread energyReportBuilder = new Thread(() =>
                 {
@@ -102,6 +109,14 @@ namespace SLPReportBuilder
                 //    //waterReportBuilder.Start() ;
                 //}
 
+                foreach (var region in _regions)
+                {
+                    SendReportToMailAsync(region);
+
+                   
+                }
+
+
             }
             catch (Exception ex)
             {
@@ -133,17 +148,40 @@ namespace SLPReportBuilder
                 region.TimestampBegin = DateTime.Today.AddDays(-1);
                 region.TimestampEnd   = DateTime.Today;
 
+                //for (int i = 0; i < 1; i++)
+                //{
+                //    List<Meter> meters = region.Branches[i].EnergyMeters;
+
+                //    if (meters.Count > 0)
+                //    {
+                //        if (!Controler.GetMeterData(ref meters, region.Branches[i].ServerName, ReportType.Day, EnergyResource.Energy, region.TimestampBegin, region.TimestampEnd))
+                //        {
+                //            logger.Warn(String.Concat(region.Branches[i].Address, " - The method of obtaining data on daily electricity consumption failed!"));
+                //        }
+                //    }
+                //    else
+                //    {
+                //        logger.Info(String.Concat("There are no electricity consumption metering units for the branch: ", region.Branches[i].Address));
+                //    }
+                //}
 
                 foreach (var branch in region.Branches)
                 {
-                    logger.Info(String.Concat("Obtaining data on daily electricity consumption for a branch office: ", branch.Address));
 
                     List<Meter> meters = branch.EnergyMeters;
-
-                    if (!Controler.GetMeterData(ref meters, branch.ServerName, ReportType.Day, EnergyResource.Energy, region.TimestampBegin, region.TimestampEnd))
+                    if (meters.Count > 0)
                     {
-                        logger.Warn(String.Concat(branch.Address, " - The method of obtaining data on daily electricity consumption failed!"));
+                        if (!Controler.GetMeterData(ref meters, branch.ServerName, ReportType.Day, EnergyResource.Energy, region.TimestampBegin, region.TimestampEnd))
+                        {
+                            logger.Warn(String.Concat(branch.Address, " - The method of obtaining data on daily electricity consumption failed!"));
+                        }
                     }
+                    else
+                    {
+                        logger.Info(String.Concat("There are no electricity consumption metering units for the branch: ", branch.Address));
+                    }
+
+
                 }
 
                 logger.Info(String.Concat("Creating a report file for a region: ", region.Name));
@@ -156,33 +194,42 @@ namespace SLPReportBuilder
 
                 #endregion
 
-
                 #region Create Weekly report
 
-                //if (DateTime.Today.DayOfWeek == DayOfWeek.Monday)
-                //{
-                //    timestamp_begin = DateTime.Today.AddDays(-7).AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
-                //    timestamp_end = DateTime.Today.AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
+                if (DateTime.Today.DayOfWeek == DayOfWeek.Monday)
+                {
+                    region.TimestampBegin = DateTime.Today.AddDays(-7).AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
+                    region.TimestampEnd = DateTime.Today.AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
 
-                //    filename = Helper.GetFileName(region.Name, ReportType.Week.ToString(), path, EnergyResource.Energy.ToString());
+                    foreach (var branch in region.Branches)
+                    {
+                        logger.Info(String.Concat("Obtaining data on weekly electricity consumption for a branch office: ", branch.Address));
 
-                //    WorkWithExcel weeklyReportWorkbook = new WorkWithExcel(filename);
 
-                //    if (!weeklyReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Energy))
-                //    {
+                        List<Meter> meters = branch.EnergyMeters;
+                        if (meters.Count > 0)
+                        {
+                            if (!Controler.GetMeterData(ref meters, branch.ServerName, ReportType.Week, EnergyResource.Energy, region.TimestampBegin, region.TimestampEnd))
+                            {
+                                logger.Warn(String.Concat(branch.Address, " - The method of obtaining data on weekly electricity consumption failed!"));
+                            }
+                        }
+                        else
+                        {
+                            logger.Info(String.Concat("There are no electricity consumption metering units for the branch: ", branch.Address));
+                        }
 
-                //    }
 
-                //    foreach (var branch in region.Branches)
-                //    {
-                //        #region 
-                //        if (!weeklyReportWorkbook.GenerateReportTemplateEnergy(branch, ReportType.Week))
-                //        {
-                //        }
-                //        #endregion
-                //    }
-                //    weeklyReportWorkbook.Save();
-                //}
+                    }
+
+
+                    logger.Info(String.Concat("Creating a weekly report file for a region: ", region.Name));
+                    filename = Path.Combine(path, Helper.GetFileName(region.Name, ReportType.Week.ToString(), path, EnergyResource.Energy.ToString()));
+                    WorkWithExcel weeklyReportWorkbook = new WorkWithExcel(filename, ReportType.Week, EnergyResource.Energy, region);
+
+                    weeklyReportWorkbook.Generate();
+                    weeklyReportWorkbook.Save();
+                }
                 #endregion
 
                 #region Create Monthly report
@@ -266,37 +313,54 @@ namespace SLPReportBuilder
                 region.TimestampEnd = DateTime.Today;
 
 
-                for (int i = 0; i < 2; i++)
-                {
-                    logger.Info(String.Concat("Obtaining data on daily water consumption for a branch office: ", region.Branches[i].Address));
-
-                    List<Meter> meters = region.Branches[i].WaterMeters;
-
-                    if (!Controler.GetMeterData(ref meters, region.Branches[i].ServerName, ReportType.Day, EnergyResource.Water, region.TimestampBegin, region.TimestampEnd))
-                    {
-                        logger.Warn(String.Concat(region.Branches[i].Address, " - The method of obtaining data on daily electricity consumption failed!"));
-                    }
-                }
-
-                //foreach (var branch in region.Branches)
+                //for (int i = 0; i < 2; i++)
                 //{
-                //    logger.Info(String.Concat("Obtaining data on daily electricity consumption for a branch office: ", branch.Address));
+                //    logger.Info(String.Concat("Obtaining data on daily water consumption for a branch office: ", region.Branches[i].Address));
 
-                //    List<Meter> meters = branch.EnergyMeters;
-
-                //    if (!Controler.GetMeterData(ref meters, branch.ServerName, ReportType.Day, EnergyResource.Energy))
+                //    List<Meter> meters = region.Branches[i].WaterMeters;
+                //    if (meters.Count > 0)
                 //    {
-                //        logger.Warn(String.Concat(branch.Address, " - The method of obtaining data on daily electricity consumption failed!"));
+                //        if (!Controler.GetMeterData(ref meters, region.Branches[i].ServerName, ReportType.Day, EnergyResource.Water, region.TimestampBegin, region.TimestampEnd))
+                //        {
+                //            logger.Warn(String.Concat(region.Branches[i].Address, " - The method of obtaining data on daily electricity consumption failed!"));
+                //        }
                 //    }
+                //    else
+                //    {
+                //        logger.Info(String.Concat("There are no water consumption metering units for the branch: ", region.Branches[i].Address));
+                //    }
+
+
+
                 //}
+
+                foreach (var branch in region.Branches)
+                {
+                    //logger.Info(String.Concat("Obtaining data on daily electricity consumption for a branch office: ", branch.Address));
+
+                    List<Meter> meters = branch.WaterMeters;
+                    if(meters.Count >0)
+                    {
+                        if (!Controler.GetMeterData(ref meters, branch.ServerName, ReportType.Day, EnergyResource.Water, region.TimestampBegin, region.TimestampEnd))
+                        {
+                            logger.Warn(String.Concat(branch.Address, " - The method of obtaining data on daily electricity consumption failed!"));
+                        }
+                        else
+                        {
+                            logger.Warn(String.Concat("There are no water consumption metering units for the branch: ", branch.Address));
+                        }
+                    }
+
+ 
+                }
 
                 logger.Info(String.Concat("Creating a report file for a region: ", region.Name));
 
 
-                filename = Path.Combine(path, Helper.GetFileName(region.Name, ReportType.Day.ToString(), path, EnergyResource.Energy.ToString()));
+                filename = Path.Combine(path, Helper.GetFileName(region.Name, ReportType.Day.ToString(), path, EnergyResource.Water.ToString()));
 
 
-                WorkWithExcel dailyReportWorkbook = new WorkWithExcel(filename, ReportType.Day, EnergyResource.Energy, region);
+                WorkWithExcel dailyReportWorkbook = new WorkWithExcel(filename, ReportType.Day, EnergyResource.Water, region);
 
                 dailyReportWorkbook.Generate();
                 dailyReportWorkbook.Save();
@@ -399,7 +463,33 @@ namespace SLPReportBuilder
             }
         }
 
+        private static async Task SendReportToMailAsync(Region region)
+        {
+            string[]? attachedFile = null;
 
+            string path = Helper.GetReportFolderByRegionName(_rootFolderName, region.Name);
+
+            using (WorkWithMail mail = new WorkWithMail())
+            {
+                if (!mail.GetConfig())
+                {
+
+                }
+                else
+                {
+                    List<MailingAddress> addres = Controler.GetListMailing(region.ID);
+
+                    if (!Helper.GetAtachedFileName(ref attachedFile, path))
+                    {
+                    }
+
+
+                    await mail.SendMailAsync(region.ID, region.Name, addres, attachedFile);
+                }
+                
+            }
+
+        }
 
     }
 }
