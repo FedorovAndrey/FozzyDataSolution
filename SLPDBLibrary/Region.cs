@@ -7,10 +7,9 @@ namespace SLPDBLibrary
         private List<BranchInformation> branches = new List<BranchInformation>();
         private int _id;
         private string _name;
-        public Region(int id, string name)
+        public Region()
         {
-            this._name = name;
-            this._id = id;
+
 
         }
 
@@ -43,10 +42,12 @@ namespace SLPDBLibrary
         public int ID
         {
             get { return this._id; }
+            set { this._id = value; }
         }
         public string Name
         {
             get { return this._name; }
+            set { this._name = value; }
         }
         public DateTime TimestampBegin { get; set; }
         public DateTime TimestampEnd { get; set; }

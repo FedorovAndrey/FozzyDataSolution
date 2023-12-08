@@ -12,7 +12,6 @@ namespace SLPDBLibrary
         }
         public string? Source { get; set; }
         public int SourceId { get; set; }
-        public TrendDatum[]? values { get; set; }
         public List<TrendValue> Values { get => _values; set => _values = value; }
 
         public void Dispose()

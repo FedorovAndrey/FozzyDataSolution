@@ -179,6 +179,14 @@ namespace SLPHelper
             return bResult;
 
         }
+        public static string GetLinkToTotalValue(int worksheet, int rowIndex)
+        {
+            StringBuilder builder = new StringBuilder(@"='");
+            builder.Append(worksheet);
+            builder.Append(@"'!B");
+            builder.Append(rowIndex);
 
+            return builder.ToString();
+        }
     }
 }

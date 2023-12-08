@@ -44,11 +44,8 @@ namespace SLPReportCreater
 
         public void Generate()
         {
-
             try
             {
-                logger.Info(String.Concat(_region.Name, " - Create report file"));
-
                 if (this._resource == EnergyResource.Energy) {
                     if (!GenerateEnergyReport()) 
                     { 
@@ -75,7 +72,7 @@ namespace SLPReportCreater
             bool bResult = false;
             try
             {
-                GenerateBranchListWorksheet(_region.Branches, EnergyResource.Energy);
+                GenerateBranchListWorksheet(_region.Branches, EnergyResource.Energy, _reportType);
                 foreach (var branch in _region.Branches)
                 {
                     logger.Info(String.Concat("Branch: ", branch.Address, " - Create electricity report sheet"));
@@ -101,11 +98,11 @@ namespace SLPReportCreater
 
             try 
             {
-                GenerateBranchListWorksheet(_region.Branches, EnergyResource.Water);
+                GenerateBranchListWorksheet(_region.Branches, EnergyResource.Water, _reportType);
 
                 foreach (var branch in _region.Branches)
                 {
-                    logger.Info(String.Concat("Branch: ", branch.Address, " - Create water report sheet"));
+                    logger.Info(String.Concat(branch.Address, " - Create water report sheet"));
 
                     if (branch.WaterMeters.Count > 0)
                     {
@@ -113,6 +110,10 @@ namespace SLPReportCreater
 
                         GenerateReportTemplateWater(ref worksheet, branch, _reportType, _region.TimestampBegin, _region.TimestampEnd);
                         FillReportDataWater(ref worksheet, branch, _reportType);
+                    }
+                    else
+                    {
+                        logger.Warn(String.Concat(branch.Address, " - There is no data on metering units in the data base"));
                     }
 
                 }
@@ -710,13 +711,32 @@ namespace SLPReportCreater
 
         }
 
-        private bool GenerateBranchListWorksheet(List<BranchInformation> branches, EnergyResource resource)
+        private bool GenerateBranchListWorksheet(List<BranchInformation> branches, EnergyResource resource, ReportType reportType)
         {
             bool bResult = false;
 
             try
             {
                 ExcelWorksheet worksheet = _excel.Workbook.Worksheets.Add("Branch List");
+                
+                int rowIndex = 0;
+
+                switch (reportType)
+                {
+                    case ReportType.Day:
+                        rowIndex = 39;
+                        break;
+                    case ReportType.Week:
+                        rowIndex = 22;
+                        break;
+                    case ReportType.Month:
+                        rowIndex = 46;
+                        break;
+                    case ReportType.Year:
+                        rowIndex = 27;
+                        break;
+                }
+
 
                 using (ExcelRange range = worksheet.Cells["A1:A2"])
                 {
@@ -837,14 +857,17 @@ namespace SLPReportCreater
                         }
                     }
 
+
+                    string s_formula = Helper.GetLinkToTotalValue(item.id, rowIndex);
+
                     using (ExcelRange range = worksheet.Cells[String.Concat("E", startRow)])
                     {
-                        range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                        range.Style.Font.SetFromFont("Arial", 10, true, false, false, false);
                         range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
                         range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
                         range.Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thin);
-                        range.Style.Numberformat.Format = "#,##0.00";
-                        range.SetCellValue(0, 0, "0.00");
+                        range.Style.Numberformat.Format = "0.00";
+                        range.Formula = s_formula;
                     }
 
                     using (ExcelRange range = worksheet.Cells[String.Concat("F", startRow)])
@@ -1340,6 +1363,7 @@ namespace SLPReportCreater
 
                 for (int i = 0; i < branch.WaterMeters.Count; i++)
                 {
+                    // Fill Legend meter
                     using (ExcelRange range = worksheet.Cells[startRegionRow, startRegionColumn])
                     {
                         range.Merge = true;
@@ -1350,16 +1374,7 @@ namespace SLPReportCreater
                         range.SetCellValue(0, 0, branch.WaterMeters[i].Legend);
                     }
 
-                    using (ExcelRange range = worksheet.Cells[startRegionRow, startRegionColumn + 1])
-                    {
-                        range.Merge = true;
-                        range.Style.Font.SetFromFont("Arial", 10, true, false, false, false);
-                        range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
-                        range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
-                        range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
-                        range.SetCellValue(0, 0, branch.WaterMeters[i].MarkingPosition);
-                    }
-
+                    // Fill SerialNumber meter
                     using (ExcelRange range = worksheet.Cells[startRegionRow + 1, startRegionColumn])
                     {
                         range.Merge = true;
@@ -1370,6 +1385,19 @@ namespace SLPReportCreater
                         range.SetCellValue(0, 0, branch.WaterMeters[i].SerialNumber);
                     }
 
+                    // Fill MarkingPosition meter
+                    using (ExcelRange range = worksheet.Cells[startRegionRow, startRegionColumn + 1])
+                    {
+                        range.Merge = true;
+                        range.Style.Font.SetFromFont("Arial", 10, true, false, false, false);
+                        range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                        range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                        range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                        range.SetCellValue(0, 0, branch.WaterMeters[i].MarkingPosition);
+                    }
+
+
+
                     using (ExcelRange range = worksheet.Cells[startRegionRow + 1, startRegionColumn + 1])
                     {
                         range.Merge = true;
@@ -1377,23 +1405,19 @@ namespace SLPReportCreater
                         range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
                         range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
                         range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
-                        range.SetCellValue(0, 0, "Споживання");
+                        //range.SetCellValue(0, 0, "Споживання");
                     }
-                    
-
-
-
                     startRegionColumn = startRegionColumn + 2;
 
 
                 }
 
-                using (ExcelRange range = worksheet.Cells[4, 10, 5, 10 + branch.WaterMeters.Count * 1])
+                using (ExcelRange range = worksheet.Cells[4, 10, 5, 10 + (branch.WaterMeters.Count * 2) - 1])
                 {
                     range.Style.Border.BorderAround(ExcelBorderStyle.Thick);
                 }
 
-                worksheet.Cells[4, 10, 5, 10 + branch.EnergyMeters.Count * 1].Copy(worksheet.Cells["C13"]);
+                worksheet.Cells[4, 10, 5, 10 + (branch.EnergyMeters.Count * 2) - 1].Copy(worksheet.Cells["C13"]);
                 #endregion
 
                 #region Formating table for data
@@ -1413,26 +1437,30 @@ namespace SLPReportCreater
 
                 for (int i = 0; i < countRow; i++)
                 {
-                    /* Field total value A+ */
+                    /* Field total value consumption */
                     cellAddres = String.Concat("B", (15 + i).ToString());
-
                     using (ExcelRange range = worksheet.Cells[cellAddres])
                     {
                         range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
                         range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
                         range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
                         range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                        range.Style.Numberformat.Format = "0.00";
                         range.FormulaR1C1 = (formula);
                     }
 
-                    for (int k = 0; k < branch.WaterMeters.Count * 1; k++)
+                    for (int k = 0; k < branch.WaterMeters.Count; k++)
                     {
-                        using (ExcelRange range = worksheet.Cells[(15 + i), 2 + k])
+                        int startCol = 2 + (k * 2) + 1;
+                        int endCol = 2 + (k * 2) + 2;
+                        using (ExcelRange range = worksheet.Cells[(15 + i), startCol, (15 + i), endCol])
                         {
+                            range.Merge = true;
                             range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
                             range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
                             range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
                             range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                            range.Style.Numberformat.Format = "0.00";
                             range.SetCellValue(0, 0, 0.00);
                         }
                     }
@@ -1449,13 +1477,12 @@ namespace SLPReportCreater
                     range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
                     range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
                     range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                    range.Style.Numberformat.Format = "0.00";
                     range.FormulaR1C1 = (s_formuls);
                 }
 
                 for (int k = 0; k < branch.WaterMeters.Count; k++)
                 {
-                    
-
                     using (ExcelRange range = worksheet.Cells[startRegionRow + countRow, 1 + startRegionColumn + (k * 2), startRegionRow + countRow, 2 + startRegionColumn + (k * 2)])
                     {
                         range.Merge = true;
@@ -1463,6 +1490,7 @@ namespace SLPReportCreater
                         range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
                         range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
                         range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                        range.Style.Numberformat.Format = "0.00";
                         range.FormulaR1C1 = (s_formuls);
                     }
 
@@ -1492,17 +1520,19 @@ namespace SLPReportCreater
 
                 for (int meter_index = 0; meter_index < branch.EnergyMeters.Count; meter_index++)
                 {
-                    if (branch.EnergyMeters[meter_index]._data.Count <= 0)
+                    if (branch.EnergyMeters[meter_index].Parametr.Count <= 0)
                     {
                         logger.Info("No parameters saved for metering unit Name : " + branch.EnergyMeters[meter_index].Legend);
                         continue;
                     };
                     
                     #region Fill Import active power
-                    var result = (from apower in branch.EnergyMeters[meter_index]._data
+
+                    var result = (from apower in branch.EnergyMeters[meter_index].Parametr
                                   where (apower.Source.Contains("Загальний імпорт активної енергії"))
                                   select new MeterData
                                   {
+                                      Source = apower.Source,
                                       Values = (
                                       from val in apower.Values
                                       select new TrendValue
@@ -1520,7 +1550,7 @@ namespace SLPReportCreater
 
                         MeterData data = result[0];
 
-                        if (data.Source != null && data.Values != null)
+                        if (data.Source != null && data.Values != null && data.Values.Count > 0)
                         {
                             List<double> values = GetConsuptionValues(data.Values);
                             List<string> timestamps = GetDateTimeValues(data.Values);
@@ -1546,7 +1576,6 @@ namespace SLPReportCreater
                                 range.Value = data.Values.Last().Value;
 
                             }
-
 
                             startRegionRow = 15;
                             startRegionColumn = 6;
@@ -1576,16 +1605,23 @@ namespace SLPReportCreater
                             }
 
                         }
+                        else
+                        {
+                            logger.Warn(String.Concat( branch.Address, ":",
+                                branch.EnergyMeters[meter_index].MarkingPosition, " - ",
+                                data.Source, " - Parameter values are missing in the database"));
+                        }
 
                     }
-
                     #endregion
 
                     #region Fill Export active power
-                    result = (from apower in branch.EnergyMeters[meter_index]._data
+
+                    result = (from apower in branch.EnergyMeters[meter_index].Parametr
                                   where (apower.Source.Contains("Загальний експорт активної енергії"))
                                   select new MeterData
                                   {
+                                      Source = apower.Source,
                                       Values = (
                                       from val in apower.Values
                                       select new TrendValue
@@ -1596,173 +1632,191 @@ namespace SLPReportCreater
 
                                   }).ToList<MeterData>();
 
-                    if (result != null)
+                    if (result != null && result.Count > 0)
                     {
                         int startRegionRow = 6;
                         int startRegionColumn = 11;
 
                         MeterData data = result[0];
-                        List<double> values = GetConsuptionValues(data.Values);
 
-                        using (ExcelRange range = worksheet.Cells[startRegionRow, (4 * meter_index) + startRegionColumn])
+                        if (data.Source != null && data.Values != null && data.Values.Count > 0)
                         {
-                            range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
-                            range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
-                            range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
-                            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
-                            range.Style.Numberformat.Format = "0.00";
-                            range.Value = data.Values.FirstOrDefault().Value;
+                            List<double> values = GetConsuptionValues(data.Values);
+                            using (ExcelRange range = worksheet.Cells[startRegionRow, (4 * meter_index) + startRegionColumn])
+                            {
+                                range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                                range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                                range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                                range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                                range.Style.Numberformat.Format = "0.00";
+                                range.Value = data.Values.FirstOrDefault().Value;
 
+                            }
+
+                            using (ExcelRange range = worksheet.Cells[startRegionRow + 1, (4 * meter_index) + startRegionColumn])
+                            {
+                                range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                                range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                                range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                                range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                                range.Style.Numberformat.Format = "0.00";
+                                range.Value = data.Values.Last().Value;
+
+                            }
+
+                            startRegionRow = 15;
+                            startRegionColumn = 7;
+
+                            using (ExcelRange range = worksheet.Cells[startRegionRow, (4 * meter_index) + startRegionColumn])
+                            {
+                                range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                                range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                                range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                                range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                                range.Style.Numberformat.Format = "0.00";
+                                range.LoadFromCollection(values);
+
+                            }
                         }
-
-                        using (ExcelRange range = worksheet.Cells[startRegionRow + 1, (4 * meter_index) + startRegionColumn])
+                        else
                         {
-                            range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
-                            range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
-                            range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
-                            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
-                            range.Style.Numberformat.Format = "0.00";
-                            range.Value = data.Values.Last().Value;
-
+                            logger.Warn(String.Concat(branch.Address, ":",
+                                branch.EnergyMeters[meter_index].MarkingPosition, " - ",
+                                data.Source, " - Parameter values are missing in the database"));
                         }
+                            
 
 
-                        startRegionRow = 15;
-                        startRegionColumn = 7;
-
-                        using (ExcelRange range = worksheet.Cells[startRegionRow, (4 * meter_index) + startRegionColumn])
-                        {
-                            range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
-                            range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
-                            range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
-                            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
-                            range.Style.Numberformat.Format = "0.00";
-                            range.LoadFromCollection(values);
-
-                        }
                     }
                     #endregion
 
                     #region Fill Import reactive power
-                    result = (from apower in branch.EnergyMeters[meter_index]._data
+                    result = (from apower in branch.EnergyMeters[meter_index].Parametr
                               where (apower.Source.Contains("Загальний імпорт реактивної енергії"))
                               select new MeterData
                               {
+                                  Source = apower.Source,
                                   Values = (
-                                  from val in apower.Values
-                                  select new TrendValue
-                                  {
-                                      Timestamp = val.Timestamp,
-                                      Value = val.Value
-                                  }).ToList()
+                                      from val in apower.Values
+                                      select new TrendValue
+                                      {
+                                          Timestamp = val.Timestamp,
+                                          Value = val.Value
+                                      }).ToList()
 
                               }).ToList<MeterData>();
 
-                    if (result != null)
+                    if (result != null && result.Count > 0)
                     {
                         int startRegionRow = 6;
                         int startRegionColumn = 12;
 
                         MeterData data = result[0];
-                        List<double> values = GetConsuptionValues(data.Values);
 
-                        using (ExcelRange range = worksheet.Cells[startRegionRow, (4 * meter_index) + startRegionColumn])
+                        if (data.Source != null && data.Values != null && data.Values.Count > 0)
                         {
-                            range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
-                            range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
-                            range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
-                            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
-                            range.Style.Numberformat.Format = "0.00";
-                            range.Value = data.Values.FirstOrDefault().Value;
+                            List<double> values = GetConsuptionValues(data.Values);
+                            using (ExcelRange range = worksheet.Cells[startRegionRow, (4 * meter_index) + startRegionColumn])
+                            {
+                                range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                                range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                                range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                                range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                                range.Style.Numberformat.Format = "0.00";
+                                range.Value = data.Values.FirstOrDefault().Value;
 
+                            }
+                            using (ExcelRange range = worksheet.Cells[startRegionRow + 1, (4 * meter_index) + startRegionColumn])
+                            {
+                                range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                                range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                                range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                                range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                                range.Style.Numberformat.Format = "0.00";
+                                range.Value = data.Values.Last().Value;
+
+                            }
+
+                            startRegionRow = 15;
+                            startRegionColumn = 8;
+                            using (ExcelRange range = worksheet.Cells[startRegionRow, (4 * meter_index) + startRegionColumn])
+                            {
+                                range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                                range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                                range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                                range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                                range.Style.Numberformat.Format = "0.00";
+                                range.LoadFromCollection(values);
+
+                            }
                         }
-
-                        using (ExcelRange range = worksheet.Cells[startRegionRow + 1, (4 * meter_index) + startRegionColumn])
-                        {
-                            range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
-                            range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
-                            range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
-                            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
-                            range.Style.Numberformat.Format = "0.00";
-                            range.Value = data.Values.Last().Value;
-
-                        }
-
-
-                        startRegionRow = 15;
-                        startRegionColumn = 8;
-
-                        using (ExcelRange range = worksheet.Cells[startRegionRow, (4 * meter_index) + startRegionColumn])
-                        {
-                            range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
-                            range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
-                            range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
-                            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
-                            range.Style.Numberformat.Format = "0.00";
-                            range.LoadFromCollection(values);
-
+                        else {
+                            logger.Warn(String.Concat(branch.Address, ":",
+                            branch.EnergyMeters[meter_index].MarkingPosition, " - ",
+                            data.Source, " - Parameter values are missing in the database"));
                         }
                     }
+                    
                     #endregion
 
                     #region Fill Export reactive power
-                    result = (from apower in branch.EnergyMeters[meter_index]._data
+                    result = (from apower in branch.EnergyMeters[meter_index].Parametr
                               where (apower.Source.Contains("Загальний експорт реактивної енергії"))
                               select new MeterData
                               {
+                                  Source = apower.Source,
                                   Values = (
-                                  from val in apower.Values
-                                  select new TrendValue
-                                  {
-                                      Timestamp = val.Timestamp,
-                                      Value = val.Value
-                                  }).ToList()
+                                      from val in apower.Values
+                                      select new TrendValue
+                                      {
+                                          Timestamp = val.Timestamp,
+                                          Value = val.Value
+                                      }).ToList()
 
                               }).ToList<MeterData>();
 
-                    if (result != null)
+                    if (result != null && result.Count > 0)
                     {
                         int startRegionRow = 6;
                         int startRegionColumn = 13;
 
                         MeterData data = result[0];
-                        List<double> values = GetConsuptionValues(data.Values);
-
-                        using (ExcelRange range = worksheet.Cells[startRegionRow, (4 * meter_index) + startRegionColumn])
+                        if (data.Source != null && data.Values != null && data.Values.Count > 0)
                         {
-                            range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
-                            range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
-                            range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
-                            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
-                            range.Style.Numberformat.Format = "0.00";
-                            range.Value = data.Values.FirstOrDefault().Value;
+                            List<double> values = GetConsuptionValues(data.Values);
+                            using (ExcelRange range = worksheet.Cells[startRegionRow, (4 * meter_index) + startRegionColumn])
+                            {
+                                range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                                range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                                range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                                range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                                range.Style.Numberformat.Format = "0.00";
+                                range.Value = data.Values.FirstOrDefault().Value;
 
-                        }
+                            }
+                            using (ExcelRange range = worksheet.Cells[startRegionRow + 1, (4 * meter_index) + startRegionColumn])
+                            {
+                                range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                                range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                                range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                                range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                                range.Style.Numberformat.Format = "0.00";
+                                range.Value = data.Values.Last().Value;
 
-                        using (ExcelRange range = worksheet.Cells[startRegionRow + 1, (4 * meter_index) + startRegionColumn])
-                        {
-                            range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
-                            range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
-                            range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
-                            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
-                            range.Style.Numberformat.Format = "0.00";
-                            range.Value = data.Values.Last().Value;
+                            }
 
-                        }
+                            startRegionRow = 15;
+                            startRegionColumn = 9;
+                            using (ExcelRange range = worksheet.Cells[startRegionRow, (4 * meter_index) + startRegionColumn])
+                            {
+                                range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
+                                range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                                range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                                range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                                range.Style.Numberformat.Format = "0.00";
+                                range.LoadFromCollection(values);
 
-
-                        startRegionRow = 15;
-                        startRegionColumn = 9;
-
-                        using (ExcelRange range = worksheet.Cells[startRegionRow, (4 * meter_index) + startRegionColumn])
-                        {
-                            range.Style.Font.SetFromFont("Arial", 10, false, false, false, false);
-                            range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
-                            range.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
-                            range.Style.Border.BorderAround(ExcelBorderStyle.Thin);
-                            range.Style.Numberformat.Format = "0.00";
-                            range.LoadFromCollection(values);
-
+                            }
                         }
                     }
                     #endregion
@@ -1783,17 +1837,18 @@ namespace SLPReportCreater
             {
                 for (int meter_index = 0; meter_index < branch.WaterMeters.Count; meter_index++)
                 {
-                    if (branch.WaterMeters[meter_index]._data.Count <= 0)
+                    if (branch.WaterMeters[meter_index].Parametr.Count <= 0)
                     {
                         logger.Info("No parameters saved for metering unit Name : " + branch.EnergyMeters[meter_index].Legend);
                         continue;
                     };
 
                     #region Fill water consumption
-                    var result = (from water in branch.WaterMeters[meter_index]._data
+                    var result = (from water in branch.WaterMeters[meter_index].Parametr
                                   where (water.Source.Contains("Показники лічильника"))
                                   select new MeterData
                                   {
+                                      Source = water.Source,
                                       Values = (
                                       from val in water.Values
                                       select new TrendValue
@@ -1811,7 +1866,7 @@ namespace SLPReportCreater
 
                         MeterData data = result[0];
 
-                        if (data.Source != null && data.Values != null)
+                        if (data.Source != null && data.Values != null && data.Values.Count > 0)
                         {
                             List<double> values = GetConsuptionValues(data.Values);
                             List<string> timestamps = GetDateTimeValues(data.Values);
