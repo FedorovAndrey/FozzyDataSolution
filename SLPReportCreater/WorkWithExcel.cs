@@ -157,14 +157,25 @@ namespace SLPReportCreater
             return lResult;
 
         }
-        private List<string> GetDateTimeValues(List<TrendValue> values)
+        private List<string> GetDateTimeValues(List<TrendValue> values, ReportType reportType)
         {
             List<string> lResult = new List<string>();
             string interval = "";
 
             for (int i = 0; i < values.Count - 1; i++)
             {
-                interval = String.Concat(values[i].Timestamp.ToShortTimeString(), "-",values[i + 1].Timestamp.ToShortTimeString());
+                switch (reportType)
+                {
+                    case ReportType.Day:
+                        interval = String.Concat(values[i].Timestamp.ToShortTimeString(), "-", values[i + 1].Timestamp.ToShortTimeString());
+                        break;
+                    case ReportType.Week: 
+                    case ReportType.Month:
+                    case ReportType.Year:
+                        interval = String.Concat(values[i].Timestamp.ToShortDateString(), "-", values[i + 1].Timestamp.ToShortDateString());
+                        break; 
+                }
+                
                 lResult.Add(interval);
             }
             return lResult;
@@ -1553,7 +1564,7 @@ namespace SLPReportCreater
                         if (data.Source != null && data.Values != null && data.Values.Count > 0)
                         {
                             List<double> values = GetConsuptionValues(data.Values);
-                            List<string> timestamps = GetDateTimeValues(data.Values);
+                            List<string> timestamps = GetDateTimeValues(data.Values, reportType);
 
                             using (ExcelRange range = worksheet.Cells[startRegionRow, (4 * meter_index) + startRegionColumn])
                             {
@@ -1869,7 +1880,7 @@ namespace SLPReportCreater
                         if (data.Source != null && data.Values != null && data.Values.Count > 0)
                         {
                             List<double> values = GetConsuptionValues(data.Values);
-                            List<string> timestamps = GetDateTimeValues(data.Values);
+                            List<string> timestamps = GetDateTimeValues(data.Values, reportType);
 
                             using (ExcelRange range = worksheet.Cells[startRegionRow, (2 * meter_index) + startRegionColumn, startRegionRow, (2 * meter_index) + startRegionColumn + 1])
                             {

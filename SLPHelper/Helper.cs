@@ -13,8 +13,8 @@ namespace SLPHelper
             {
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.Append(DateTime.Now.ToString().Replace(".", "-").Replace(":", "-"));
-                stringBuilder.Append("_" + source);
                 stringBuilder.Append("_" + regionName);
+                stringBuilder.Append("_" + source);
                 stringBuilder.Append("_" + reportType);
                 stringBuilder.Append(".xlsx");
 

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
 using SLPMailSender;
 using SLPReportBuilder;
+using SLPReportCreater;
 
 var logger = LoggerFactory.Create(builder => builder.AddNLog()).CreateLogger<Program>();
 logger.LogInformation("Program has started.");
@@ -20,44 +21,15 @@ try
         _ = Directory.CreateDirectory(reportFolder);
     }
 
-    ReportBuilderCore.GenerateReport(reportFolder);
 
-    //var regions = Controler.GetRegion();
 
-    //WorkWithExcel regionReport = new WorkWithExcel(1, "Центр", reportFolder);
-    //Thread regionThread = new Thread(regionReport.Generate);
-    //regionThread.Start();
-
-    //if (regions != null)
-    //{
-    //    foreach (var region in regions)
-    //    {
-    //        logger.LogInformation("A report generation thread is created : " + region.Name);
-    //        WorkWithExcel regionReport = new WorkWithExcel(region.Id, region.Name, reportFolder);
-    //        Thread regionThread = new Thread(regionReport.Generate);
-    //        regionThread.Start();
-
-    //    }
-
-    //    foreach (var region in regions)
-    //    {
-    //        logger.LogInformation("Creating a flow for generating a report on water consumption by a branch :  : " + region.Name);
-    //        WorkWithExcel regionWaterReport = new WorkWithExcel(region.Id, region.Name, reportFolder);
-    //        Thread regionWaterThread = new Thread(regionWaterReport.Generate);
-    //        regionWaterThread.Start();
-
-    //    }
-    //}
+    //ReportBuilderCore.GenerateReport(reportFolder);
+    ReportBuilderCore.GenerateReports(reportFolder);
 
 
 
     logger.LogInformation("All threads are complete");
 
-    //using (WorkWithMail mailSender = new WorkWithMail())
-    //{
-    //    mailSender.GetConfig();
-    //    _ = mailSender.SendMailAsync( SendMailAsync("interandry@gmail.com", "TEST SENDER SLP REPORTS", "TEST Sender report sender");
-    //}
 }
 catch (Exception ex)
 {

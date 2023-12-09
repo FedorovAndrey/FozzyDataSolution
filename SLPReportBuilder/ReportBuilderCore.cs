@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using NLog;
+using OfficeOpenXml.Table.PivotTable;
 using Org.BouncyCastle.Asn1.Cmp;
 using SLPDBLibrary;
 using SLPDBLibrary.Models;
@@ -20,13 +21,14 @@ namespace SLPReportBuilder
         private static string _rootFolderName;
         private static string _reportFolderByRegion;
 
+        private static List<Thread> _threads = new List<Thread>();
+
         public static async void GenerateReport(string path)
         {
-
             _rootFolderName = path;
             try
             {
-                logger.Info("Executing the report generation method - GenerateReport(string path)");
+                logger.Info("Executing the report generation method");
 
                 var regions = Controler.GetRegion();
 
@@ -54,7 +56,6 @@ namespace SLPReportBuilder
                     if (!Controler.GetBranchesInformation(ref branches, region.ID))
                     {
                         logger.Warn("Could not get a list of branches for the regin. There is no data in the database.");
-                        
                     }
 
                     if (branches != null && branches.Count > 0)
@@ -62,19 +63,15 @@ namespace SLPReportBuilder
                         region.Branches.AddRange(branches);
 
                     }
-
                 }
                 
                 _reportFolderByRegion = Path.Combine(_rootFolderName, _regions[0].Name);
 
-                logger.Info("Create a thread for generating a power consumption report" + _regions[0].Name);
                 Thread energyReportBuilder = new Thread(() =>
                 {
                     GenerateEnergyReport(_regions[0], _reportFolderByRegion);
                 });
-
-
-                logger.Info("Create a thread for generating a water consumption report" + _regions[0].Name);
+                                
                 Thread waterReportBuilder = new Thread(() =>
                 {
                     GenerateWaterReport(_regions[0], _reportFolderByRegion);
@@ -122,6 +119,106 @@ namespace SLPReportBuilder
             }
         }
 
+        public static void GenerateReports(string path)
+        {
+            try
+            {
+                Report dailyEnergyReport = new Report(path, ReportType.Day, EnergyResource.Energy);
+                Report dailyWaterReport = new Report(path, ReportType.Day, EnergyResource.Water);
+
+                Report weeklyEnergyReport = new Report(path, ReportType.Week, EnergyResource.Energy);
+                Report weeklyWaterReport = new Report(path, ReportType.Week, EnergyResource.Water);
+
+                Report monthlyEnergyReport = new Report(path, ReportType.Month, EnergyResource.Energy);
+                Report monthlyWaterReport = new Report(path, ReportType.Month, EnergyResource.Water);
+
+                Thread dailyEnergyReportThread = new Thread(() =>
+                {
+                    TreadProcess(dailyEnergyReport);
+                });
+
+                Thread dailyWaterReportThread = new Thread(() =>
+                {
+                    TreadProcess(dailyWaterReport);
+                });
+
+                Thread weeklyEnergyReportThread = new Thread(() =>
+                {
+                    TreadProcess(weeklyEnergyReport);
+                });
+
+                Thread weeklyWaterReportThread = new Thread(() =>
+                {
+                    TreadProcess(weeklyWaterReport);
+                });
+
+                Thread monthlyEnergyReportThread = new Thread(() =>
+                {
+                    TreadProcess(monthlyEnergyReport);
+                });
+
+                Thread monthlyWaterReportThread = new Thread(() =>
+                {
+                    TreadProcess(monthlyWaterReport);
+                });
+
+                dailyEnergyReportThread.Name = "dailyEnergyReportThread";
+                dailyWaterReportThread.Name = "dailyWaterReportThread";
+
+                weeklyEnergyReportThread.Name = "weeklyEnergyReportThread";
+                weeklyWaterReportThread.Name = "weeklyWaterReportThread";
+
+                monthlyEnergyReportThread.Name = "monthlyEnergyReportThread";
+                monthlyWaterReportThread.Name = "monthlyWaterReportThread";
+
+                _threads.Add(dailyEnergyReportThread);
+                _threads.Add(dailyWaterReportThread);
+
+                _threads.Add(weeklyEnergyReportThread);
+                _threads.Add(weeklyWaterReportThread);
+
+                _threads.Add(monthlyEnergyReportThread);
+                _threads.Add(monthlyWaterReportThread);
+
+
+                foreach (Thread thread in _threads)
+                {
+                    if (thread != null && !thread.IsAlive)
+                    {
+                        thread.Start(); 
+                    }
+                }
+
+                foreach (Thread thread in _threads)
+                {
+                    if (thread != null && thread.IsAlive)
+                    { 
+                        thread.Join();
+                    }
+                }
+
+            }
+            catch(Exception ex) 
+            { 
+                logger.Error(ex.Message);
+            }   
+        }
+
+        private static void TreadProcess(Report report)
+        {
+            try
+            {
+                
+                report.Generate();
+
+            }
+            catch (Exception ex) 
+            {
+                logger.Error(ex.Message);
+            }
+            
+        }
+
         private static void GenerateEnergyReport(SLPDBLibrary.Region region, string path)
         {
             logger.Info("Run of energy consumption report generation flow - " + region.Name);
@@ -132,7 +229,7 @@ namespace SLPReportBuilder
                 #region Create daily report
 
                 region.TimestampBegin = DateTime.Today.AddDays(-1);
-                region.TimestampEnd   = DateTime.Today;
+                region.TimestampEnd = DateTime.Today;
 
                 foreach (var branch in region.Branches)
                 {
@@ -155,9 +252,9 @@ namespace SLPReportBuilder
                     Thread.Sleep(50);
                 }
 
-                logger.Info(String.Concat("Creating a report file for a region: ", region.Name));
+                logger.Info(String.Concat(region.Name, " - Creating a report file for a region"));
 
-                filename = Path.Combine(path,  Helper.GetFileName(region.Name, ReportType.Day.ToString(), path, EnergyResource.Energy.ToString()));
+                filename = Path.Combine(path, Helper.GetFileName(region.Name, ReportType.Day.ToString(), path, EnergyResource.Energy.ToString()));
                 WorkWithExcel dailyReportWorkbook = new WorkWithExcel(filename, ReportType.Day, EnergyResource.Energy, region);
 
                 dailyReportWorkbook.Generate();
@@ -168,39 +265,39 @@ namespace SLPReportBuilder
                 #region Create Weekly report
 
                 if (DateTime.Today.DayOfWeek == DayOfWeek.Monday)
-                {
+                { 
+                }
+
                     region.TimestampBegin = DateTime.Today.AddDays(-7).AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
                     region.TimestampEnd = DateTime.Today.AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
 
                     foreach (var branch in region.Branches)
                     {
-                        logger.Info(String.Concat("Obtaining data on weekly electricity consumption for a branch office: ", branch.Address));
-
-
                         List<Meter> meters = branch.EnergyMeters;
+
                         if (meters.Count > 0)
                         {
-                            if (!Controler.GetMeterData(ref meters, branch.ServerName, ReportType.Week, EnergyResource.Energy, region.TimestampBegin, region.TimestampEnd))
+                            if (!Controler.GetMeterDataWeekly(ref meters, branch.ServerName, EnergyResource.Energy, region.TimestampBegin, region.TimestampEnd))
                             {
                                 logger.Warn(String.Concat(branch.Address, " - The method of obtaining data on weekly electricity consumption failed!"));
                             }
                         }
                         else
                         {
-                            logger.Info(String.Concat("There are no electricity consumption metering units for the branch: ", branch.Address));
+                        logger.Info(String.Concat(branch.Address, " - There are no electricity consumption metering units for the branch: "));
                         }
 
-
+                        Thread.Sleep(100);
                     }
 
+                    logger.Info(String.Concat(region.Name," - Creating a weekly report file for a region"));
 
-                    logger.Info(String.Concat("Creating a weekly report file for a region: ", region.Name));
                     filename = Path.Combine(path, Helper.GetFileName(region.Name, ReportType.Week.ToString(), path, EnergyResource.Energy.ToString()));
                     WorkWithExcel weeklyReportWorkbook = new WorkWithExcel(filename, ReportType.Week, EnergyResource.Energy, region);
 
                     weeklyReportWorkbook.Generate();
                     weeklyReportWorkbook.Save();
-                }
+                
                 #endregion
 
                 #region Create Monthly report
@@ -313,52 +410,45 @@ namespace SLPReportBuilder
 
                 #endregion
 
-
                 #region Create Weekly report
 
-                //if (DateTime.Today.DayOfWeek == DayOfWeek.Monday)
-                //{
-                //region.TimestampBegin = DateTime.Today.AddDays(-7).AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
-                //region.TimestampEnd = DateTime.Today.AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
+                if (DateTime.Today.DayOfWeek == DayOfWeek.Monday)
+                {
+                }
 
-                //for(int i = 0; i < 2; i++) {
+                region.TimestampBegin = DateTime.Today.AddDays(-7).AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
+                region.TimestampEnd = DateTime.Today.AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
 
-                //    logger.Info(String.Concat(region.Branches[i].Address, " - Report generation"));
 
-                //    List<Meter> meters = region.Branches[i].WaterMeters;
 
-                //    if (meters.Count > 0)
-                //    {
-                //        if (!Controler.GetMeterData(ref meters, branch.ServerName, ReportType.Day, EnergyResource.Water, region.TimestampBegin, region.TimestampEnd))
-                //        {
-                //            logger.Warn(String.Concat(branch.Address, " - The method of obtaining data on daily water consumption failed!"));
-                //        }
-                //    }
-                //    else
-                //    {
-                //        logger.Warn(String.Concat(branch.Address, " - There are no water consumption metering units for the branch"));
-                //    }
+                foreach (var branch in region.Branches)
+                {
 
-                //}
-                //    filename = Helper.GetFileName(region.Name, ReportType.Week.ToString(), path, EnergyResource.Energy.ToString());
+                    List<Meter> meters = branch.WaterMeters;
 
-                //    WorkWithExcel weeklyReportWorkbook = new WorkWithExcel(filename);
+                    if (meters.Count > 0)
+                    {
+                        if (!Controler.GetMeterDataWeekly(ref meters, branch.ServerName, EnergyResource.Water, region.TimestampBegin, region.TimestampEnd))
+                        {
+                            logger.Warn(String.Concat(branch.Address, " - The method of obtaining data on weekly water consumption failed!"));
+                        }
+                    }
+                    else
+                    {
+                        logger.Warn(String.Concat(branch.Address, " - There are no water consumption metering units for the branch"));
+                    }
 
-                //    if (!weeklyReportWorkbook.GenerateBranchListWorksheet(region.Branches, EnergyResource.Energy))
-                //    {
+                    Thread.Sleep(100);
+                }
 
-                //    }
+                logger.Info(String.Concat(region.Name, " - Creating a weekly report file for region"));
 
-                //    foreach (var branch in region.Branches)
-                //    {
-                //        #region 
-                //        if (!weeklyReportWorkbook.GenerateReportTemplateEnergy(branch, ReportType.Week))
-                //        {
-                //        }
-                //        #endregion
-                //    }
-                //    weeklyReportWorkbook.Save();
-                //}
+                filename = Path.Combine(path, Helper.GetFileName(region.Name, ReportType.Week.ToString(), path, EnergyResource.Energy.ToString()));
+                WorkWithExcel weeklyReportWorkbook = new WorkWithExcel(filename, ReportType.Week, EnergyResource.Energy, region);
+
+                weeklyReportWorkbook.Generate();
+                weeklyReportWorkbook.Save();
+
                 #endregion
 
                 #region Create Monthly report
@@ -434,25 +524,25 @@ namespace SLPReportBuilder
 
             string path = Helper.GetReportFolderByRegionName(_rootFolderName, region.Name);
 
-            //using (WorkWithMail mail = new WorkWithMail())
-            //{
-            //    if (!mail.GetConfig())
-            //    {
+            using (WorkWithMail mail = new WorkWithMail())
+            {
+                if (!mail.GetConfig())
+                {
 
-            //    }
-            //    else
-            //    {
-            //        List<MailingAddress> addres = Controler.GetListMailing(region.ID);
+                }
+                else
+                {
+                    List<MailingAddress> addres = Controler.GetListMailing(region.ID);
 
-            //        if (!Helper.GetAtachedFileName(ref attachedFile, path))
-            //        {
-            //        }
+                    if (!Helper.GetAtachedFileName(ref attachedFile, path))
+                    {
+                    }
 
 
-            //        await mail.SendMailAsync(region.ID, region.Name, addres, attachedFile);
-            //    }
-                
-            //}
+                    await mail.SendMailAsync(region.ID, region.Name, addres, attachedFile);
+                }
+
+            }
 
         }
 

@@ -33,6 +33,31 @@ namespace SLPDBLibrary
             }
             return listRegion;
         }
+        public static bool GetRegions(ref List<Region> regions)
+        {
+            bool bResult = false;
+            try
+            {
+                using (EboDbContext db = new EboDbContext())
+                {
+                    var queryRegion = (from region in db.TbRegions
+                                       select new Region
+                                       {
+                                           ID = region.Id,
+                                           Name = region.Name
+                                       });
+                    regions.AddRange(queryRegion);
+                }
+                bResult = true;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex.Message);
+                logger.Error(ex.Source);
+                
+            }
+            return bResult;
+        }
         public static bool GetBranchesInformation( ref List<BranchInformation> branches,  int regionId)
         {
             bool bResult = false;
@@ -173,6 +198,8 @@ namespace SLPDBLibrary
                 {
                     string s_server = server.Replace("{", "").Replace("}", "");
                     string s_meter = meter.MarkingPosition.Replace("-", "");
+
+                    meter.Parametr.Clear();
                     /*
                     if (s_server == "o-zh-zhitn1-em1")
                     {
@@ -283,12 +310,91 @@ namespace SLPDBLibrary
 
             return bResult;
         }
-        public static bool GetMeterDataWeekly()
+        public static bool GetMeterDataWeekly(ref List<Meter> meters, string server, EnergyResource resource, DateTime timestamp_begin, DateTime timestamp_end)
         {
             bool bResult = false;
 
             try { 
+                foreach (Meter meter in meters) {
+                    string s_server = server.Replace("{", "").Replace("}", "");
+                    string s_meter = meter.MarkingPosition.Replace("-", "");
+
+                    meter.Parametr.Clear();
+
+                    if(resource == EnergyResource.Energy) {
+
+                        using (EboDbContext db = new EboDbContext())
+                        {
+                            var query = (
+                                from trend in db.TrendMeta
+                                where trend.Source.Contains(s_server) &&
+                                      trend.Source.Contains(s_meter) &&
+                                      trend.Source.Contains("Загальний") &&
+                                      (trend.Source.Contains("експорт") || trend.Source.Contains("імпорт"))
+                                orderby trend.Source
+                                select new MeterData
+                                {
+                                    Source = trend.Source,
+                                    SourceId = trend.Externallogid,
+
+                                    Values = (
+                                        from data in db.TrendData
+                                        where data.Externallogid == trend.Externallogid &&
+                                              data.Timestamp >= timestamp_begin &&
+                                              data.Timestamp <= timestamp_end &&
+                                              (data.Timestamp.Minute == 0 && data.Timestamp.Hour == 0)  
+                                        select new TrendValue
+                                        {
+                                            Timestamp = data.Timestamp,
+                                            Value = data.Value
+                                        }
+                                    ).ToList()
+                                }
+                                ).ToList();
+                            meter.Parametr.AddRange(query);
+
+                        }
+
+                    }
+
+                    if (resource == EnergyResource.Water) {
+
+                        using (EboDbContext dbContext = new EboDbContext())
+                        {
+                            var query = (
+                                from trend in dbContext.TrendMeta
+                                where trend.Source.Contains(s_server) &&
+                                      trend.Source.Contains(s_meter) &&
+                                      trend.Source.Contains("Показники") &&
+                                      trend.Source.Contains("лічильника")
+                                orderby trend.Source
+                                select new MeterData
+                                {
+                                    Source = trend.Source,
+                                    SourceId = trend.Externallogid,
+
+                                    Values = (
+                                        from data in dbContext.TrendData
+                                        where data.Externallogid == trend.Externallogid &&
+                                              data.Timestamp >= timestamp_begin &&
+                                              data.Timestamp <= timestamp_end &&
+                                              (data.Timestamp.Minute == 0 && data.Timestamp.Hour == 0)
+                                        select new TrendValue
+                                        {
+                                            Timestamp = data.Timestamp,
+                                            Value = data.Value
+                                        }
+                                    ).ToList()
+                                }
+                                ).ToList();
+                            meter.Parametr.AddRange(query);
+
+                        }
+
+                    }
+                }
                 
+
                 bResult = true;
             }
             catch(Exception ex) {
@@ -299,6 +405,106 @@ namespace SLPDBLibrary
 
             return bResult;
         }
-        
+        public static bool GetMeterDataEarly(ref List<Meter> meters, string server, EnergyResource resource, DateTime timestamp_begin, DateTime timestamp_end)
+        {
+            bool bResult = false;
+
+            try
+            {
+                foreach (Meter meter in meters)
+                {
+                    string s_server = server.Replace("{", "").Replace("}", "");
+                    string s_meter = meter.MarkingPosition.Replace("-", "");
+
+                    meter.Parametr.Clear();
+
+                    if (resource == EnergyResource.Energy)
+                    {
+
+                        using (EboDbContext db = new EboDbContext())
+                        {
+                            var query = (
+                                from trend in db.TrendMeta
+                                where trend.Source.Contains(s_server) &&
+                                      trend.Source.Contains(s_meter) &&
+                                      trend.Source.Contains("Загальний") &&
+                                      (trend.Source.Contains("експорт") || trend.Source.Contains("імпорт"))
+                                orderby trend.Source
+                                select new MeterData
+                                {
+                                    Source = trend.Source,
+                                    SourceId = trend.Externallogid,
+
+                                    Values = (
+                                        from data in db.TrendData
+                                        where data.Externallogid == trend.Externallogid &&
+                                              data.Timestamp >= timestamp_begin &&
+                                              data.Timestamp <= timestamp_end &&
+                                              (data.Timestamp.Day == 1 && data.Timestamp.Hour == 0 && data.Timestamp.Minute == 0  )
+                                        select new TrendValue
+                                        {
+                                            Timestamp = data.Timestamp,
+                                            Value = data.Value
+                                        }
+                                    ).ToList()
+                                }
+                                ).ToList();
+                            meter.Parametr.AddRange(query);
+
+                        }
+
+                    }
+
+                    if (resource == EnergyResource.Water)
+                    {
+
+                        using (EboDbContext dbContext = new EboDbContext())
+                        {
+                            var query = (
+                                from trend in dbContext.TrendMeta
+                                where trend.Source.Contains(s_server) &&
+                                      trend.Source.Contains(s_meter) &&
+                                      trend.Source.Contains("Показники") &&
+                                      trend.Source.Contains("лічильника")
+                                orderby trend.Source
+                                select new MeterData
+                                {
+                                    Source = trend.Source,
+                                    SourceId = trend.Externallogid,
+
+                                    Values = (
+                                        from data in dbContext.TrendData
+                                        where data.Externallogid == trend.Externallogid &&
+                                              data.Timestamp >= timestamp_begin &&
+                                              data.Timestamp <= timestamp_end &&
+                                              (data.Timestamp.Minute == 0 && data.Timestamp.Hour == 0)
+                                        select new TrendValue
+                                        {
+                                            Timestamp = data.Timestamp,
+                                            Value = data.Value
+                                        }
+                                    ).ToList()
+                                }
+                                ).ToList();
+                            meter.Parametr.AddRange(query);
+
+                        }
+
+                    }
+                }
+
+
+                bResult = true;
+            }
+            catch (Exception ex)
+            {
+
+                logger.Error(ex.Message);
+                logger.Error(ex.Source);
+            }
+
+            return bResult;
+        }
+
     }
 }
