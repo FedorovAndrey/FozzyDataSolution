@@ -78,10 +78,11 @@ public partial class EboDbContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder.UseNpgsql("Host=sfpv-pgdb015;Port=5432;Database=ebo_db;Username=ebo_user;Password=too8er4vohn8Zooc",
-            builder => {
+            builder =>
+            {
                 builder.EnableRetryOnFailure(10, TimeSpan.FromSeconds(10), null);
             });
-        
+
 
 
     }

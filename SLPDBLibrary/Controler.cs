@@ -1,5 +1,4 @@
-﻿using System.Data.Entity;
-using NLog;
+﻿using NLog;
 using SLPDBLibrary.Models;
 using SLPHelper;
 
@@ -16,12 +15,14 @@ namespace SLPDBLibrary
             {
                 using (EboDbContext db = new EboDbContext())
                 {
+#pragma warning disable CS8601 // Possible null reference assignment.
                     var queryRegion = (from regions in db.TbRegions
                                        select new Region
                                        {
                                            ID = regions.Id,
                                            Name = regions.Name
                                        });
+#pragma warning restore CS8601 // Possible null reference assignment.
                     listRegion.AddRange(queryRegion);
                 }
             }
@@ -40,12 +41,14 @@ namespace SLPDBLibrary
             {
                 using (EboDbContext db = new EboDbContext())
                 {
+#pragma warning disable CS8601 // Possible null reference assignment.
                     var queryRegion = (from region in db.TbRegions
                                        select new Region
                                        {
                                            ID = region.Id,
                                            Name = region.Name
                                        });
+#pragma warning restore CS8601 // Possible null reference assignment.
                     regions.AddRange(queryRegion);
                 }
                 bResult = true;
@@ -54,11 +57,11 @@ namespace SLPDBLibrary
             {
                 logger.Error(ex.Message);
                 logger.Error(ex.Source);
-                
+
             }
             return bResult;
         }
-        public static bool GetBranchesInformation( ref List<BranchInformation> branches,  int regionId)
+        public static bool GetBranchesInformation(ref List<BranchInformation> branches, int regionId)
         {
             bool bResult = false;
 
@@ -90,7 +93,7 @@ namespace SLPDBLibrary
 
                     foreach (var item in queryResult)
                     {
- 
+
                         BranchInformation branchInformation = new BranchInformation
                         {
                             id = item.id,
@@ -120,13 +123,13 @@ namespace SLPDBLibrary
                     }
                 }
 
-                    bResult = true;
+                bResult = true;
             }
             catch (Exception ex)
-            { 
+            {
                 logger.Error(ex.Message);
                 logger.Error(ex.Source);
-                logger.Error(ex.StackTrace);    
+                logger.Error(ex.StackTrace);
             }
 
             return bResult;
@@ -150,24 +153,40 @@ namespace SLPDBLibrary
             }
             return result;
         }
-        public static List<MailingAddress>? GetListMailing(int regionId)
+        public static List<MailingAddress>? GetListMailing(ReportType reportType)
         {
             List<MailingAddress> lMailingList = new List<MailingAddress>();
 
             try
             {
+                int mailCategory = 0;
+
+                switch (reportType)
+                {
+                    case ReportType.Day:
+                        mailCategory = 1;
+                        break;
+                    case ReportType.Week: 
+                        mailCategory = 3;
+                        break;
+                    case ReportType.Month: 
+                        mailCategory = 6;
+                        break;
+                    case ReportType.Year:
+                        mailCategory = 10;
+                        break;
+
+                }
                 using (EboDbContext db = new EboDbContext())
                 {
 
                     var query = (from employee in db.TbEmployees
-                                 where employee.Mailing == regionId ||
+                                 where employee.Mailing == mailCategory ||
                                  employee.Mailing == 0
                                  select employee).ToList();
 
                     foreach (var employee in query)
                     {
-
-
                         MailingAddress mailAddress = new() { Name = String.Concat(employee.FirstName, " ", employee.LastName), Mail = employee.Email };
                         lMailingList.Add(mailAddress);
                     }
@@ -193,11 +212,13 @@ namespace SLPDBLibrary
 
             try
             {
-                
+
                 foreach (var meter in meters)
                 {
                     string s_server = server.Replace("{", "").Replace("}", "");
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                     string s_meter = meter.MarkingPosition.Replace("-", "");
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
                     meter.Parametr.Clear();
                     /*
@@ -229,12 +250,13 @@ namespace SLPDBLibrary
 
                     }
                     */
-                    
+
                     if (resource == EnergyResource.Energy)
                     {
                         using (EboDbContext db = new EboDbContext())
                         {
-                            var query =(
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+                            var query = (
                                 from trend in db.TrendMeta
                                 where trend.Source.Contains(s_server) &&
                                       trend.Source.Contains(s_meter) &&
@@ -248,7 +270,8 @@ namespace SLPDBLibrary
 
                                     Values = (
                                         from data in db.TrendData
-                                        where data.Externallogid == trend.Externallogid &&
+                                        where data.Value != null &&
+                                              data.Externallogid == trend.Externallogid &&
                                               data.Timestamp >= timestamp_begin &&
                                               data.Timestamp <= timestamp_end &&
                                               data.Timestamp.Minute == 0
@@ -260,6 +283,7 @@ namespace SLPDBLibrary
                                     ).ToList()
                                 }
                                 ).ToList();
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                             meter.Parametr.AddRange(query);
 
                         }
@@ -269,6 +293,7 @@ namespace SLPDBLibrary
                     {
                         using (EboDbContext dbContext = new EboDbContext())
                         {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                             var query = (
                                 from trend in dbContext.TrendMeta
                                 where trend.Source.Contains(s_server) &&
@@ -295,6 +320,7 @@ namespace SLPDBLibrary
                                     ).ToList()
                                 }
                                 ).ToList();
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                             meter.Parametr.AddRange(query);
 
                         }
@@ -314,17 +340,23 @@ namespace SLPDBLibrary
         {
             bool bResult = false;
 
-            try { 
-                foreach (Meter meter in meters) {
+            try
+            {
+                foreach (Meter meter in meters)
+                {
                     string s_server = server.Replace("{", "").Replace("}", "");
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                     string s_meter = meter.MarkingPosition.Replace("-", "");
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
                     meter.Parametr.Clear();
 
-                    if(resource == EnergyResource.Energy) {
+                    if (resource == EnergyResource.Energy)
+                    {
 
                         using (EboDbContext db = new EboDbContext())
                         {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                             var query = (
                                 from trend in db.TrendMeta
                                 where trend.Source.Contains(s_server) &&
@@ -342,7 +374,7 @@ namespace SLPDBLibrary
                                         where data.Externallogid == trend.Externallogid &&
                                               data.Timestamp >= timestamp_begin &&
                                               data.Timestamp <= timestamp_end &&
-                                              (data.Timestamp.Minute == 0 && data.Timestamp.Hour == 0)  
+                                              (data.Timestamp.Minute == 0 && data.Timestamp.Hour == 0)
                                         select new TrendValue
                                         {
                                             Timestamp = data.Timestamp,
@@ -351,16 +383,19 @@ namespace SLPDBLibrary
                                     ).ToList()
                                 }
                                 ).ToList();
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                             meter.Parametr.AddRange(query);
 
                         }
 
                     }
 
-                    if (resource == EnergyResource.Water) {
+                    if (resource == EnergyResource.Water)
+                    {
 
                         using (EboDbContext dbContext = new EboDbContext())
                         {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                             var query = (
                                 from trend in dbContext.TrendMeta
                                 where trend.Source.Contains(s_server) &&
@@ -387,17 +422,19 @@ namespace SLPDBLibrary
                                     ).ToList()
                                 }
                                 ).ToList();
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                             meter.Parametr.AddRange(query);
 
                         }
 
                     }
                 }
-                
+
 
                 bResult = true;
             }
-            catch(Exception ex) {
+            catch (Exception ex)
+            {
 
                 logger.Error(ex.Message);
                 logger.Error(ex.Source);
@@ -414,7 +451,9 @@ namespace SLPDBLibrary
                 foreach (Meter meter in meters)
                 {
                     string s_server = server.Replace("{", "").Replace("}", "");
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                     string s_meter = meter.MarkingPosition.Replace("-", "");
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
                     meter.Parametr.Clear();
 
@@ -423,6 +462,7 @@ namespace SLPDBLibrary
 
                         using (EboDbContext db = new EboDbContext())
                         {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                             var query = (
                                 from trend in db.TrendMeta
                                 where trend.Source.Contains(s_server) &&
@@ -440,7 +480,7 @@ namespace SLPDBLibrary
                                         where data.Externallogid == trend.Externallogid &&
                                               data.Timestamp >= timestamp_begin &&
                                               data.Timestamp <= timestamp_end &&
-                                              (data.Timestamp.Day == 1 && data.Timestamp.Hour == 0 && data.Timestamp.Minute == 0  )
+                                              (data.Timestamp.Day == 1 && data.Timestamp.Hour == 0 && data.Timestamp.Minute == 0)
                                         select new TrendValue
                                         {
                                             Timestamp = data.Timestamp,
@@ -449,6 +489,7 @@ namespace SLPDBLibrary
                                     ).ToList()
                                 }
                                 ).ToList();
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                             meter.Parametr.AddRange(query);
 
                         }
@@ -460,6 +501,7 @@ namespace SLPDBLibrary
 
                         using (EboDbContext dbContext = new EboDbContext())
                         {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                             var query = (
                                 from trend in dbContext.TrendMeta
                                 where trend.Source.Contains(s_server) &&
@@ -486,6 +528,7 @@ namespace SLPDBLibrary
                                     ).ToList()
                                 }
                                 ).ToList();
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                             meter.Parametr.AddRange(query);
 
                         }

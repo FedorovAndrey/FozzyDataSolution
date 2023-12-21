@@ -7,7 +7,9 @@ namespace SLPDBLibrary
         private List<BranchInformation> branches = new List<BranchInformation>();
         private int _id;
         private string _name;
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public Region()
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
 
 

@@ -1,38 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics.Metrics;
 using NLog;
-using Org.BouncyCastle.Asn1.Cmp;
-using Org.BouncyCastle.Tls;
 using SLPDBLibrary;
 using SLPDBLibrary.Models;
 using SLPHelper;
+using SLPMailSender;
 
 namespace SLPReportCreater
 {
-    public class Report:IDisposable
+    public class Report : IDisposable
     {
         private string _rootFolder = "";
+#pragma warning disable CS0414 // The field 'Report._reportFolder' is assigned but its value is never used
         private string _reportFolder = "";
+#pragma warning restore CS0414 // The field 'Report._reportFolder' is assigned but its value is never used
 
-        private ReportType _reportType; 
-        private EnergyResource _energyResource; 
-        
+        private ReportType _reportType;
+        private EnergyResource _energyResource;
+
         private Logger logger = LogManager.GetLogger("logger");
         private List<SLPDBLibrary.Region> regions;
 
         List<Thread> _threads = new List<Thread>();
 
-        public Report(string rootFolder, ReportType reportType, EnergyResource resource) 
-        { 
+        public Report(string rootFolder, ReportType reportType, EnergyResource resource)
+        {
             _rootFolder = rootFolder;
             _energyResource = resource;
-            _reportType = reportType;   
+            _reportType = reportType;
 
             regions = new List<SLPDBLibrary.Region>();
         }
@@ -48,11 +42,12 @@ namespace SLPReportCreater
             {
                 logger.Warn("Obtaining a list of regtons ended unsuccessfully. " +
                     "There are no records in the database");
-                
+
             }
 
-            if(regions != null && regions.Count > 0) {
-                
+            if (regions != null && regions.Count > 0)
+            {
+
                 foreach (var item in regions)
                 {
                     #region Creating folders for reports by region
@@ -63,7 +58,7 @@ namespace SLPReportCreater
                     #endregion
 
                     #region Getting the list of branches for regions
-                    
+
                     List<BranchInformation> branches = new List<BranchInformation>();
                     if (!Controler.GetBranchesInformation(ref branches, item.ID))
                     {
@@ -78,25 +73,27 @@ namespace SLPReportCreater
                     #endregion
                 }
 
-                foreach(var item in regions)
+                foreach (var item in regions)
                 {
-                    if(item != null && item.Branches.Count > 0)
+                    if (item != null && item.Branches.Count > 0)
                     {
-                        Thread tread = new Thread(() => {
+                        Thread tread = new Thread(() =>
+                        {
                             ThreadProcess(item, _rootFolder, _reportType, _energyResource);
                         });
-                        tread.Name = item.Name;
+                        tread.Name = item.Name + ": Thread report created ";
                         _threads.Add(tread);
 
                     }
 
                 }
 
-                foreach(var thread in _threads)
+                foreach (var thread in _threads)
                 {
-                    if(thread != null && !thread.IsAlive) 
+                    if (thread != null && !thread.IsAlive)
                     {
                         logger.Info(thread.Name + " - Is Started ...");
+                        thread.IsBackground = true;
                         thread.Start();
 
                     }
@@ -104,9 +101,9 @@ namespace SLPReportCreater
 
                 foreach (var thread in _threads)
                 {
-                    if(thread.IsAlive)
-                    { 
-                        thread.Join(); 
+                    if (thread.IsAlive)
+                    {
+                        thread.Join();
                     }
                 }
             }
@@ -115,20 +112,20 @@ namespace SLPReportCreater
         }
         private void ThreadProcess(SLPDBLibrary.Region region, string rootFolder, ReportType reportType, EnergyResource energyResource)
         {
-           
-            if (energyResource == EnergyResource.Energy) 
+
+            if (energyResource == EnergyResource.Energy)
             {
                 GenerateEnergyReport(region, reportType);
             }
 
-            if (energyResource == EnergyResource.Water) 
+            if (energyResource == EnergyResource.Water)
             {
                 GenerateWaterReport(region, reportType);
             }
 
 
-            Thread.Sleep(100);
-            
+            Thread.Sleep(10);
+
         }
 
         private void GenerateEnergyReport(SLPDBLibrary.Region region, ReportType reportType)
@@ -137,20 +134,21 @@ namespace SLPReportCreater
             DateTime TimestampEnd = DateTime.MaxValue;
             string path = Path.Combine(this._rootFolder, region.Name);
 
-            string message = String.Concat(region.Name," : Energy report - ", reportType.ToString(), " - Start generated...");
+            string message = String.Concat(region.Name, " : Energy report - ", reportType.ToString(), " - Start generated...");
             logger.Info(message);
 
             try
             {
                 #region Select time interval from type of report
 
-                switch (reportType) { 
+                switch (reportType)
+                {
                     case ReportType.Day:
                         TimestampBegin = DateTime.Today.AddDays(-1);
-                        TimestampEnd = DateTime.Today; 
+                        TimestampEnd = DateTime.Today;
                         break;
 
-                    case ReportType.Week: 
+                    case ReportType.Week:
                         TimestampBegin = DateTime.Today.AddDays(-7).AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
                         TimestampEnd = DateTime.Today.AddDays((-1) * (int)(DateTime.Today.DayOfWeek - 1));
                         break;
@@ -165,36 +163,48 @@ namespace SLPReportCreater
                         TimestampEnd = new DateTime(DateTime.Today.Year, 1, 1);
                         break;
                 }
+                region.TimestampBegin = TimestampBegin;
+                region.TimestampEnd = TimestampEnd;
+                
                 #endregion
 
                 #region Get data from database for branch meters
                 if (region.Branches.Count > 0)
+
+
                 {
+                    //for (int i = 0; i < 1; i++)
                     for (int i = 0; i < region.Branches.Count; i++)
                     {
-                        List<Meter> meters = region.Branches[i].EnergyMeters;
+                        List<SLPDBLibrary.Meter> meters = region.Branches[i].EnergyMeters;
 
                         if (meters.Count > 0)
                         {
                             switch (reportType)
                             {
                                 case ReportType.Day:
+#pragma warning disable CS8604 // Possible null reference argument.
                                     if (!Controler.GetMeterData(ref meters, region.Branches[i].ServerName, ReportType.Day, EnergyResource.Energy, TimestampBegin, TimestampEnd))
                                     {
                                         logger.Warn(String.Concat(region.Branches[i].Address, " - The method of obtaining data on daily electricity consumption failed!"));
                                     }
+#pragma warning restore CS8604 // Possible null reference argument.
                                     break;
                                 case ReportType.Week:
+#pragma warning disable CS8604 // Possible null reference argument.
                                     if (!Controler.GetMeterDataWeekly(ref meters, region.Branches[i].ServerName, EnergyResource.Energy, TimestampBegin, TimestampEnd))
                                     {
                                         logger.Warn(String.Concat(region.Branches[i].Address, " - The method of obtaining data on daily electricity consumption failed!"));
                                     }
+#pragma warning restore CS8604 // Possible null reference argument.
                                     break;
                                 case ReportType.Month:
+#pragma warning disable CS8604 // Possible null reference argument.
                                     if (!Controler.GetMeterDataWeekly(ref meters, region.Branches[i].ServerName, EnergyResource.Energy, TimestampBegin, TimestampEnd))
                                     {
                                         logger.Warn(String.Concat(region.Branches[i].Address, " - The method of obtaining data on daily electricity consumption failed!"));
                                     }
+#pragma warning restore CS8604 // Possible null reference argument.
                                     break;
                                 case ReportType.Year:
                                     break;
@@ -205,7 +215,7 @@ namespace SLPReportCreater
                             logger.Info(String.Concat(region.Branches[i].Address, " There are no electricity consumption metering units for the branch"));
                         }
 
-                        Thread.Sleep(100);
+                        Thread.Sleep(10);
                     }
                 }
 
@@ -218,6 +228,11 @@ namespace SLPReportCreater
                 dailyReportWorkbook.Generate();
                 dailyReportWorkbook.Save();
 
+                using (WorkWithMail sender = new WorkWithMail())
+                {
+                    sender.SendReport(region.Name, filename, region.ID, reportType);
+                }
+
             }
             catch (Exception ex)
             {
@@ -226,7 +241,7 @@ namespace SLPReportCreater
 
 
         }
-        private void GenerateWaterReport(SLPDBLibrary.Region region, ReportType reportType) 
+        private void GenerateWaterReport(SLPDBLibrary.Region region, ReportType reportType)
         {
             DateTime TimestampBegin = DateTime.MinValue;
             DateTime TimestampEnd = DateTime.MaxValue;
@@ -268,32 +283,38 @@ namespace SLPReportCreater
                 {
                     for (int i = 0; i < region.Branches.Count; i++)
                     {
-                        List<Meter> meters = region.Branches[i].WaterMeters;
+                        List<SLPDBLibrary.Meter> meters = region.Branches[i].WaterMeters;
 
                         if (meters.Count > 0)
                         {
                             switch (reportType)
                             {
                                 case ReportType.Day:
+#pragma warning disable CS8604 // Possible null reference argument.
                                     if (!Controler.GetMeterData(ref meters, region.Branches[i].ServerName, ReportType.Day, EnergyResource.Water, TimestampBegin, TimestampEnd))
                                     {
                                         logger.Warn(String.Concat(region.Branches[i].Address, " - The method of obtaining data on daily electricity consumption failed!"));
                                     }
+#pragma warning restore CS8604 // Possible null reference argument.
                                     break;
                                 case ReportType.Week:
+#pragma warning disable CS8604 // Possible null reference argument.
                                     if (!Controler.GetMeterDataWeekly(ref meters, region.Branches[i].ServerName, EnergyResource.Water, TimestampBegin, TimestampEnd))
                                     {
                                         logger.Warn(String.Concat(region.Branches[i].Address, " - The method of obtaining data on daily electricity consumption failed!"));
                                     }
+#pragma warning restore CS8604 // Possible null reference argument.
                                     break;
                                 case ReportType.Month:
+#pragma warning disable CS8604 // Possible null reference argument.
                                     if (!Controler.GetMeterDataWeekly(ref meters, region.Branches[i].ServerName, EnergyResource.Water, TimestampBegin, TimestampEnd))
                                     {
                                         logger.Warn(String.Concat(region.Branches[i].Address, " - The method of obtaining data on daily electricity consumption failed!"));
                                     }
-                                    break; 
+#pragma warning restore CS8604 // Possible null reference argument.
+                                    break;
                                 case ReportType.Year:
-                                    break; 
+                                    break;
                             }
 
                         }
@@ -301,7 +322,7 @@ namespace SLPReportCreater
                         {
                             logger.Info(String.Concat(region.Branches[i].Address, " There are no water consumption metering units for the branch"));
                         }
-                        Thread.Sleep(100);
+                        Thread.Sleep(10);
                     }
                 }
 
@@ -313,6 +334,11 @@ namespace SLPReportCreater
 
                 dailyReportWorkbook.Generate();
                 dailyReportWorkbook.Save();
+
+                using (WorkWithMail sender = new WorkWithMail())
+                {
+                    sender.SendReport(region.Name, filename, region.ID, reportType);
+                }
 
             }
             catch (Exception ex)

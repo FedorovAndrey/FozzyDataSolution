@@ -1,9 +1,11 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Net;
 using MailKit.Net.Smtp;
 using Microsoft.Extensions.Configuration;
 using MimeKit;
 using NLog;
 using SLPDBLibrary;
+using SLPHelper;
 
 
 //rcvLbyuc5Yvd08Mk
@@ -62,7 +64,9 @@ namespace SLPMailSender
             }
             return bResult;
         }
-        public async Task SendMailAsync(int regionID, string regionName, List<MailingAddress> mailingAddresses, string[] listAtached)
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        public async Task SendMailAsync(int regionID, string regionName, List<MailingAddress> mailingAddresses, string filename)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             try
             {
@@ -100,14 +104,9 @@ namespace SLPMailSender
                 // Attaching files to be sent
                 using (var wc = new WebClient())
                 {
-                    if (listAtached != null && listAtached.Length > 0)
+                    if (filename != String.Empty && File.Exists(filename))
                     {
-                        for (int i = 0; i < listAtached.Length; i++)
-                        {
-                            string fileName = new FileInfo(listAtached[i]).Name;
-
-                            bodyBuilder.Attachments.Add(fileName, wc.DownloadData(listAtached[i]));
-                        }
+                        bodyBuilder.Attachments.Add(filename, wc.DownloadData(filename));
                     }
 
                 }
@@ -132,6 +131,40 @@ namespace SLPMailSender
                 logger.Error(ex.Source); logger.Error(ex.StackTrace);
             }
 
+        }
+
+        public bool SendReport(string regionName, string filename, int regionID, ReportType reportType)
+        {
+            bool bResult = false;
+
+            try
+            {
+                if (!GetConfig())
+                {
+                    logger.Warn("Failed to get the mail server configuration to send the report");
+                    return false;
+                }
+
+                List<MailingAddress> addresses = Controler.GetListMailing(reportType);
+                if(addresses == null) {
+                    logger.Warn("Failed to retrieve the list of report recipients");
+                    return false;
+                }
+
+                _ = this.SendMailAsync(regionID, regionName, addresses, filename);
+
+
+
+
+
+
+                bResult = true;
+            }
+            catch (Exception ex)
+            { 
+
+            }
+            return bResult;
         }
 
 

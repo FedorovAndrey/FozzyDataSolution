@@ -20,9 +20,9 @@ namespace SLPHelper
 
                 sResult = stringBuilder.ToString();
             }
-            catch 
+            catch
             {
-                
+
                 sResult = String.Empty;
             }
 
@@ -68,7 +68,7 @@ namespace SLPHelper
                 }
                 bResult = true;
             }
-            catch 
+            catch
             {
 
             }
@@ -141,6 +141,7 @@ namespace SLPHelper
             bool bResult = false;
             string s_path = "";
 
+#pragma warning disable CS0168 // Variable is declared but never used
             try
             {
                 s_path = Path.Combine(RootReportFolder, regionName);
@@ -153,29 +154,33 @@ namespace SLPHelper
 
             }
             catch (Exception ex)
-            { 
+            {
             }
+#pragma warning restore CS0168 // Variable is declared but never used
 
             return bResult;
         }
         public static string CreateFullFileName(string path, string fileName)
         {
-            string s_path = Path.Combine(path, fileName);   
+            string s_path = Path.Combine(path, fileName);
             return s_path;
         }
         public static bool GetAtachedFileName(ref string[] files, string path)
         {
             bool bResult = false;
 
+#pragma warning disable CS0168 // Variable is declared but never used
             try
             {
                 files = Directory.GetFiles(path);
 
                 bResult = true;
             }
-            catch (Exception ex) { 
+            catch (Exception ex)
+            {
 
             }
+#pragma warning restore CS0168 // Variable is declared but never used
             return bResult;
 
         }

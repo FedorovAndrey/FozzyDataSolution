@@ -1,6 +1,4 @@
-﻿using SLPDBLibrary.Models;
-
-namespace SLPDBLibrary
+﻿namespace SLPDBLibrary
 {
     public class MeterData : IDisposable
     {
